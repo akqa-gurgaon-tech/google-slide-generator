@@ -31,9 +31,6 @@ export class GoogleClientService {
     this.oauth2Client.setCredentials(tokens);
 
     const userInfo = await google.oauth2('v2').userinfo.get({ auth: this.oauth2Client });
-    console.log(userInfo);
-
-    console.log(JSON.stringify(userInfo));
 
     const userId = userInfo.data.id!;
     const accessToken = tokens.access_token!;

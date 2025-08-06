@@ -6,11 +6,19 @@ import { NeonDatabase } from './db.ts';
 import { GoogleClientService } from './gs.ts';
 import { google } from 'googleapis';
 import { createPresentation } from './slideGenerator.ts';
-
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
+
+app.use(express.json());
+
+app.use(cors({
+  origin: 'http://localhost:5173', // Allow your frontend origin
+  credentials: true, // If sending cookies or Authorization header
+}));
+
 const db = new NeonDatabase(process.env.DATABASE_URL!);
 const googleService = new GoogleClientService(db);
 
@@ -40,7 +48,7 @@ app.use(session({
 // Step 1: Redirect user to Google
 app.get('/auth', (req, res) => {
   const userId = req.session.userId;
-  if (userId) return res.redirect('http://localhost:5173/presentations');
+  if (userId) res.redirect('http://localhost:5173/presentations');
   const url = googleService.generateAuthUrl();
   res.redirect(url);
 });
@@ -52,7 +60,7 @@ app.get('/auth/callback', async (req, res) => {
   try {
     const userId = await googleService.handleOAuthCallback(code);
     req.session.userId = userId;
-    res.json({"url": '/presentations'});
+    res.redirect('http://localhost:5173/presentations');
     // res.json({ url: 'http://localhost:5173/presentations' });
   } catch (err) {
     console.error('OAuth callback error:', err);
@@ -94,20 +102,27 @@ app.get('/slides', async (req, res) => {
 
 app.post('/presentation/create', async (req, res) => {
   const userId = req.session.userId;
-  if (!userId) res.json({"url": '/login'});
-
   const { slides } = req.body;
 
   const client = await googleService.getClientForUser(userId);
   const slidesApi = google.slides({ version: 'v1', auth: client });
-  const id = await createPresentation(slidesApi, slides);
-  res.send(id);
+  const url = await createPresentation(slidesApi, slides);
+  console.log("Generated ppt url: ", url);
+  res.json({url: url});
 });
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.json({"url": '/login'});
   });
+});
+
+app.get('/auth/status', (req, res) => {
+  if (req.session.userId) {
+    res.json({ loggedIn: true, userId: req.session.userId });
+  } else {
+    res.json({ loggedIn: false });
+  }
 });
 
 

@@ -14,6 +14,7 @@ export class NeonDatabase {
 
   constructor(connectionString: string) {
     this.pool = new Pool({ connectionString });
+    console.log("DB connected")
   }
 
   // Create a user

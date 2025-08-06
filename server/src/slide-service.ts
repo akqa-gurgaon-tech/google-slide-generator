@@ -36,12 +36,12 @@ class SlideService {
       const allSlides = (await slides.presentations.get({ presentationId })).data.slides;
   
       const newSlide = allSlides?.find((s: any) => s.objectId === slideId);
-      console.log(`newSlide: ${JSON.stringify(newSlide)}`);
+      // console.log(`newSlide: ${JSON.stringify(newSlide)}`);
       const placeholders = newSlide?.pageElements;
   
-      console.log(
-        `Slide ${slide.id} placeholders: ${JSON.stringify(placeholders)}`
-      );
+      // console.log(
+      //   `Slide ${slide.id} placeholders: ${JSON.stringify(placeholders)}`
+      // );
   
       // 4. Build insert text/image requests for this slide
       const requests = buildInsertTextRequests(placeholders ?? [], slide.inputs);

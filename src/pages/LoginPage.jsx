@@ -27,13 +27,9 @@ const LoginPage = ({ onLogin }) => {
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Hardcoded credentials check
-    if (credentials.username === "admin" && credentials.password === "admin") {
-      onLogin();
-      navigate("/presentations");
-    } else {
-      setError("Invalid username or password. Please try again.");
-    }
+
+    onLogin();
+    // navigate("/presentations");
 
     setIsLoading(false);
   };
@@ -52,40 +48,6 @@ const LoginPage = ({ onLogin }) => {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="username" className="form-label">
-              Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={credentials.username}
-              onChange={handleInputChange}
-              className="form-input"
-              placeholder="Enter your username"
-              required
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleInputChange}
-              className="form-input"
-              placeholder="Enter your password"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
           {error && <div className="error-message">{error}</div>}
 
           <button
