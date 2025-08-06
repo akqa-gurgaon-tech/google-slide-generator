@@ -1,5 +1,5 @@
-function buildInsertTextRequests(placeholders, inputs) {
-  const requests = [];
+export function buildInsertTextRequests(placeholders: any[], inputs: any): any[] {
+  const requests: any[] = [];
 
   for (const el of placeholders) {
     if (
@@ -62,5 +62,3 @@ function buildInsertTextRequests(placeholders, inputs) {
 
   return requests;
 }
-
-module.exports = { buildInsertTextRequests };
