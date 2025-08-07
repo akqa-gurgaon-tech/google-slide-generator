@@ -55,9 +55,9 @@ app.get('/auth/callback', async (req, res) => {
   } catch (err) {
     console.error('OAuth callback error:', err);
     
-    // If it's a missing refresh token error, redirect to consent
-    if (err.message?.includes('Missing required fields')) {
-      console.log('Missing refresh token, redirecting to consent flow');
+    // If it's a missing refresh token error for new user, redirect to consent
+    if (err.message === 'MISSING_REFRESH_TOKEN') {
+      console.log('New user missing refresh token, redirecting to consent flow');
       return res.redirect('/auth?force_consent=true');
     }
     
@@ -69,11 +69,26 @@ app.post('/presentation/create', async (req, res) => {
   const userId = req.session.userId;
   const { slides } = req.body;
 
-  const client = await googleService.getClientForUser(userId);
-  const slidesApi = google.slides({ version: 'v1', auth: client });
-  const url = await createPresentation(slidesApi, slides);
-  console.log("Generated ppt url: ", url);
-  res.json({url: url});
+  try {
+    const client = await googleService.getClientForUser(userId);
+    const slidesApi = google.slides({ version: 'v1', auth: client });
+    const url = await createPresentation(slidesApi, slides);
+    console.log("Generated ppt url: ", url);
+    res.json({url: url});
+  } catch (error) {
+    console.error('Presentation creation error:', error);
+    
+    // If user needs to re-authenticate, send appropriate response
+    if (error.message?.includes('re-authenticate with consent')) {
+      return res.status(401).json({ 
+        error: 'Authentication required', 
+        needsConsent: true,
+        message: 'Please log in again to grant necessary permissions'
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to create presentation' });
+  }
 });
 
 app.get('/logout', (req, res) => {

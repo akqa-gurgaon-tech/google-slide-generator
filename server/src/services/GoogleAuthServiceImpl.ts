@@ -53,21 +53,41 @@ export class GoogleAuthServiceImpl implements GoogleAuthService {
     const refreshToken = tokens.refresh_token; // Can be undefined on subsequent logins
     const expiry = new Date(tokens.expiry_date || Date.now());
 
-    // Prepare token data - only include refresh_token if it's provided
-    const tokenData: Partial<UserToken> & Pick<UserToken, 'user_id'> = {
-      user_name: userName,
-      user_email: userEmail,  
-      user_id: userId,
-      access_token: accessToken,
-      expiry,
-    };
+    // Check if user exists
+    const existingUser = await this.db.getUserToken(userId);
 
-    // Only include refresh_token if Google provided one (first-time auth)
-    if (refreshToken) {
-      tokenData.refresh_token = refreshToken;
+    if (existingUser) {
+      // Existing user - only store if we have refresh token or token is expired
+      const tokenData: Partial<UserToken> & Pick<UserToken, 'user_id'> = {
+        user_id: userId,
+        access_token: accessToken,
+        expiry,
+      };
+
+      // Include refresh token if provided
+      if (refreshToken) {
+        tokenData.refresh_token = refreshToken;
+      }
+
+      await this.db.storeOrUpdateUserToken(tokenData);
+    } else {
+      // New user - must have refresh token
+      if (!refreshToken) {
+        throw new Error('MISSING_REFRESH_TOKEN');
+      }
+
+      // Store complete user data
+      const tokenData: Partial<UserToken> & Pick<UserToken, 'user_id'> = {
+        user_name: userName,
+        user_email: userEmail,  
+        user_id: userId,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expiry,
+      };
+
+      await this.db.storeOrUpdateUserToken(tokenData);
     }
-
-    await this.db.storeOrUpdateUserToken(tokenData);
 
     // Return userId so you can store it in session/JWT
     return userId;
@@ -86,24 +106,28 @@ export class GoogleAuthServiceImpl implements GoogleAuthService {
 
     // Refresh if expired
     if (Date.now() >= new Date(token.expiry).getTime()) {
-      const refreshed = await this.oauth2Client.refreshAccessToken();
-      const { credentials } = refreshed;
+      try {
+        const refreshed = await this.oauth2Client.refreshAccessToken();
+        const { credentials } = refreshed;
 
-      // Prepare refresh token data
-      const refreshTokenData: Partial<UserToken> & Pick<UserToken, 'user_id'> = {
-        user_id: userId,
-        access_token: credentials.access_token!,
-        expiry: new Date(credentials.expiry_date || Date.now() + 3600 * 1000),
-      };
+        // Update tokens in database
+        const refreshTokenData: Partial<UserToken> & Pick<UserToken, 'user_id'> = {
+          user_id: userId,
+          access_token: credentials.access_token!,
+          expiry: new Date(credentials.expiry_date || Date.now() + 3600 * 1000),
+        };
 
-      // Only update refresh_token if we got a new one
-      if (credentials.refresh_token) {
-        refreshTokenData.refresh_token = credentials.refresh_token;
+        // Include refresh token if provided
+        if (credentials.refresh_token) {
+          refreshTokenData.refresh_token = credentials.refresh_token;
+        }
+
+        await this.db.storeOrUpdateUserToken(refreshTokenData);
+        this.oauth2Client.setCredentials(credentials);
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        throw new Error('Token refresh failed - user needs to re-authenticate');
       }
-
-      await this.db.storeOrUpdateUserToken(refreshTokenData);
-
-      this.oauth2Client.setCredentials(credentials);
     }
 
     return this.oauth2Client;
