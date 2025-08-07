@@ -15,50 +15,62 @@ export class NeonDBService implements DBService {
         const existingUser = await this.getUserToken(token.user_id);
         
         if (existingUser) {
-            // Update existing user - preserve refresh_token if not provided
-            const updateFields: string[] = [];
-            const updateValues: any[] = [];
-            let paramIndex = 1;
+            // User exists - only update if token is expired or we have new refresh token
+            const now = new Date();
+            const tokenExpiry = new Date(existingUser.expiry);
+            
+            // Only update if token is expired OR we have a new refresh token
+            if (now >= tokenExpiry || token.refresh_token) {
+                const updateFields: string[] = [];
+                const updateValues: any[] = [];
+                let paramIndex = 1;
 
-            if (token.user_name !== undefined) {
-                updateFields.push(`user_name = $${paramIndex++}`);
-                updateValues.push(token.user_name);
-            }
-            if (token.user_email !== undefined) {
-                updateFields.push(`user_email = $${paramIndex++}`);
-                updateValues.push(token.user_email);
-            }
-            if (token.access_token !== undefined) {
-                updateFields.push(`access_token = $${paramIndex++}`);
-                updateValues.push(token.access_token);
-            }
-            if (token.refresh_token !== undefined) {
-                updateFields.push(`refresh_token = $${paramIndex++}`);
-                updateValues.push(token.refresh_token);
-            }
-            if (token.expiry !== undefined) {
-                updateFields.push(`expiry = $${paramIndex++}`);
-                updateValues.push(token.expiry);
-            }
+                // Always update access token and expiry when updating
+                if (token.access_token !== undefined) {
+                    updateFields.push(`access_token = $${paramIndex++}`);
+                    updateValues.push(token.access_token);
+                }
+                if (token.expiry !== undefined) {
+                    updateFields.push(`expiry = $${paramIndex++}`);
+                    updateValues.push(token.expiry);
+                }
+                
+                // Update refresh token only if provided
+                if (token.refresh_token !== undefined) {
+                    updateFields.push(`refresh_token = $${paramIndex++}`);
+                    updateValues.push(token.refresh_token);
+                }
 
-            updateValues.push(token.user_id);
+                // Update user info if provided
+                if (token.user_name !== undefined) {
+                    updateFields.push(`user_name = $${paramIndex++}`);
+                    updateValues.push(token.user_name);
+                }
+                if (token.user_email !== undefined) {
+                    updateFields.push(`user_email = $${paramIndex++}`);
+                    updateValues.push(token.user_email);
+                }
 
-            await this.pool.query(
-                `UPDATE user_tokens SET ${updateFields.join(', ')} WHERE user_id = $${paramIndex}`,
-                updateValues
-            );
+                if (updateFields.length > 0) {
+                    updateValues.push(token.user_id);
+                    await this.pool.query(
+                        `UPDATE user_tokens SET ${updateFields.join(', ')} WHERE user_id = $${paramIndex}`,
+                        updateValues
+                    );
+                    console.log('Updated existing user tokens');
+                } else {
+                    console.log('No update needed - token still valid');
+                }
+            } else {
+                console.log('User exists with valid token - no update needed');
+            }
         } else {
-            // Insert new user - require all fields for initial insert except refresh_token
-            if (!token.user_name || !token.user_email || !token.access_token || !token.expiry) {
-                throw new Error('Missing required fields for new user registration');
+            // New user - require ALL mandatory fields including refresh_token
+            if (!token.user_name || !token.user_email || !token.access_token || !token.refresh_token || !token.expiry) {
+                throw new Error('Missing required fields for new user registration. All fields including refresh_token are mandatory.');
             }
 
-            // If no refresh token provided, this might be a subsequent login - skip insert for now
-            if (!token.refresh_token) {
-                console.log('No refresh token provided for new user, skipping database insert');
-                return;
-            }
-
+            console.log('Inserting new user with complete data');
             await this.pool.query(
                 `INSERT INTO user_tokens (user_name, user_email, user_id, access_token, refresh_token, expiry)
                  VALUES ($1, $2, $3, $4, $5, $6)`,
