@@ -1,12 +1,13 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { NeonDatabase } from './db.ts';
+import type { DBService } from '../interfaces/DBService.ts';
+import type { GoogleAuthService } from '../interfaces/GoogleAuthService.ts';
 
-export class GoogleClientService {
+export class GoogleAuthServiceImpl implements GoogleAuthService {
   private oauth2Client: OAuth2Client;
-  private db: NeonDatabase;
+  private db: DBService;
 
-  constructor(db: NeonDatabase) {
+  constructor(db: DBService) {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
@@ -20,8 +21,14 @@ export class GoogleClientService {
   generateAuthUrl(): string {
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/userinfo.email'],
-      prompt: 'consent'
+      scope: [
+        'openid',
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/presentations',
+      ]
+      ,
+      include_granted_scopes: true,
     });
   }
 
