@@ -18,14 +18,52 @@ function App() {
     localStorage.setItem("isAuthenticated", isAuthenticated.toString());
   }, [isAuthenticated]);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  useEffect(() => {
+    const verifySession = async () => {
+      const isLoggedIn = await checkLoginStatus();
+      setIsAuthenticated(isLoggedIn);
+    };
+
+    verifySession();
+  }, []);
+
+  // const handleLogin = async () => {
+  //   console.log("handle-new-login");
+  //   const response = await fetch("http://localhost:5000/auth", {
+  //     method: "GET",
+  //     headers: { "Content-Type": "application/json" },
+  //   });
+  //   console.log("hi");
+  //   const data = await response.json();
+  //   console.log(data);
+  //   window.location.href = data.url;
+  // };
+
+  const handleLogin = async () => {
+    const isLoggedIn = await checkLoginStatus();
+    if (isLoggedIn) {
+      setIsAuthenticated(true);
+    } else {
+      window.location.href = "http://localhost:5000/auth";
+    }
   };
 
-  const handleLogout = () => {
+  const checkLoginStatus = async () => {
+    const response = await fetch("http://localhost:5000/auth/status", {
+      credentials: "include", // important to send session cookie
+    });
+    const data = await response.json();
+    return data.loggedIn;
+  };
+
+  const handleLogout = async () => {
     setIsAuthenticated(false);
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("slides");
+    const response = await fetch("http://localhost:5000/logout", {
+      credentials: "include", // important to send session cookie
+    });
+    const data = await response.json();
   };
 
   return (

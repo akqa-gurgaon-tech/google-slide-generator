@@ -73,12 +73,15 @@ function EditorPage({ onLogout }) {
     setIsCreating(true);
     try {
       console.log("Submitting slides:", slides);
-      const response = await fetch("http://localhost:5000/api/create-slide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slides }),
-      });
-
+      const response = await fetch(
+        "http://localhost:5000/presentation/create",
+        {
+          credentials: "include",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slides }),
+        }
+      );
       const data = await response.json();
       if (data.url) {
         setPresentationUrl(data.url);
