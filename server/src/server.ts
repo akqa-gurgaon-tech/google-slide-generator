@@ -34,10 +34,13 @@ app.use(session({
 }));
 
 // Step 1: Redirect user to Google
-app.get('/auth', (req, res) => {
+app.get('/auth', async (req, res) => {
   const userId = req.session.userId;
   if (userId) res.redirect('http://localhost:5173/presentations');
-  const url = googleService.generateAuthUrl();
+  
+  // Check if we need to force consent (only if user exists but has no valid refresh token)
+  const forceConsent = req.query.force_consent === 'true';
+  const url = googleService.generateAuthUrl(forceConsent);
   res.redirect(url);
 });
 
@@ -51,6 +54,13 @@ app.get('/auth/callback', async (req, res) => {
     res.redirect('http://localhost:5173/presentations');
   } catch (err) {
     console.error('OAuth callback error:', err);
+    
+    // If it's a missing refresh token error, redirect to consent
+    if (err.message?.includes('Missing required fields')) {
+      console.log('Missing refresh token, redirecting to consent flow');
+      return res.redirect('/auth?force_consent=true');
+    }
+    
     res.status(500).send('Authentication failed');
   }
 });
