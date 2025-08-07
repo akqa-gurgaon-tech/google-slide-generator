@@ -53,7 +53,7 @@ class SlideService {
       });
     }
     return `https://docs.google.com/presentation/d/${presentationId}/edit`;
-  
+  }
 }
 
 export default SlideService;
