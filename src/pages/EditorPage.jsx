@@ -4,7 +4,7 @@ import Toolbar from "../components/Toolbar";
 import SlidePanel from "../components/SlidePanel";
 import SlideEditor from "../components/SlideEditor";
 
-function EditorPage({ onLogout }) {
+function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
     return JSON.parse(localStorage.getItem("slides")) || [];
   });
@@ -113,6 +113,7 @@ function EditorPage({ onLogout }) {
         isCreating={isCreating}
         onBack={handleBackToPresentations}
         onLogout={onLogout}
+        userInfo={userInfo}
       />
 
       <div className="main-content">

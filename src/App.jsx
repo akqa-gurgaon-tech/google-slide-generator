@@ -13,15 +13,30 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem("isAuthenticated") === "true";
   });
+  const [userInfo, setUserInfo] = useState(() => {
+    const stored = localStorage.getItem("userInfo");
+    return stored ? JSON.parse(stored) : null;
+  });
 
   useEffect(() => {
     localStorage.setItem("isAuthenticated", isAuthenticated.toString());
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (userInfo) {
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    } else {
+      localStorage.removeItem("userInfo");
+    }
+  }, [userInfo]);
+
+  useEffect(() => {
     const verifySession = async () => {
-      const isLoggedIn = await checkLoginStatus();
-      setIsAuthenticated(isLoggedIn);
+      const result = await checkLoginStatus();
+      setIsAuthenticated(result.isLoggedIn);
+      if (result.userInfo) {
+        setUserInfo(result.userInfo);
+      }
     };
 
     verifySession();
@@ -40,9 +55,12 @@ function App() {
   // };
 
   const handleLogin = async () => {
-    const isLoggedIn = await checkLoginStatus();
-    if (isLoggedIn) {
+    const result = await checkLoginStatus();
+    if (result.isLoggedIn) {
       setIsAuthenticated(true);
+      if (result.userInfo) {
+        setUserInfo(result.userInfo);
+      }
     } else {
       window.location.href = "http://localhost:5000/auth";
     }
@@ -53,12 +71,17 @@ function App() {
       credentials: "include", // important to send session cookie
     });
     const data = await response.json();
-    return data.loggedIn;
+    return {
+      isLoggedIn: data.loggedIn,
+      userInfo: data.userInfo || null
+    };
   };
 
   const handleLogout = async () => {
     setIsAuthenticated(false);
+    setUserInfo(null);
     localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userInfo");
     localStorage.removeItem("slides");
     const response = await fetch("http://localhost:5000/logout", {
       credentials: "include", // important to send session cookie
@@ -96,7 +119,7 @@ function App() {
             path="/presentations"
             element={
               isAuthenticated ? (
-                <PresentationsPage onLogout={handleLogout} />
+                <PresentationsPage onLogout={handleLogout} userInfo={userInfo} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -107,7 +130,7 @@ function App() {
             path="/editor"
             element={
               isAuthenticated ? (
-                <EditorPage onLogout={handleLogout} />
+                <EditorPage onLogout={handleLogout} userInfo={userInfo} />
               ) : (
                 <Navigate to="/login" replace />
               )

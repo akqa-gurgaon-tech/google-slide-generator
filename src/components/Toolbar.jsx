@@ -7,6 +7,7 @@ const Toolbar = ({
   isCreating,
   onBack,
   onLogout,
+  userInfo,
 }) => {
   return (
     <div className="toolbar">
@@ -67,6 +68,12 @@ const Toolbar = ({
             </>
           )}
         </button>
+
+        {userInfo && (
+          <div className="user-info">
+            <span className="user-name">👤 {userInfo.name}</span>
+          </div>
+        )}
 
         {onLogout && (
           <button
