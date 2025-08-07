@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const PresentationsPage = ({ onLogout }) => {
+const PresentationsPage = ({ onLogout, userInfo }) => {
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ const PresentationsPage = ({ onLogout }) => {
         </div>
         <div className="header-right">
           <div className="user-info">
-            <span className="user-name">👤 Admin</span>
+            <span className="user-name">👤 {userInfo?.name || 'User'}</span>
             <button className="logout-button" onClick={onLogout}>
               Sign Out
             </button>

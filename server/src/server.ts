@@ -97,9 +97,27 @@ app.get('/logout', (req, res) => {
   });
 });
 
-app.get('/auth/status', (req, res) => {
+app.get('/auth/status', async (req, res) => {
   if (req.session.userId) {
-    res.json({ loggedIn: true, userId: req.session.userId });
+    try {
+      // Get user information from database
+      const userToken = await dbService.getUserToken(req.session.userId);
+      if (userToken) {
+        res.json({ 
+          loggedIn: true, 
+          userId: req.session.userId,
+          userInfo: {
+            name: userToken.user_name,
+            email: userToken.user_email
+          }
+        });
+      } else {
+        res.json({ loggedIn: false });
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      res.json({ loggedIn: false });
+    }
   } else {
     res.json({ loggedIn: false });
   }
