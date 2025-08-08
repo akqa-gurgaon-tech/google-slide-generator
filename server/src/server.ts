@@ -19,7 +19,7 @@ app.use(cors({
   credentials: true, // If sending cookies or Authorization header
 }));
 
-const dbService: DBService = new NeonDBService(process.env.DATABASE_URL!);
+const dbService: DBService = NeonDBService.getInstance(process.env.DATABASE_URL!);
 const googleService: GoogleAuthService = new GoogleAuthServiceImpl(dbService);
 
 // 🔐 Use sessions to store userId
