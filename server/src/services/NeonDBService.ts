@@ -3,11 +3,19 @@ import type { DBService } from "../interfaces/DBService.ts";
 import type { UserToken } from "../types/UserToken.js";
 
 export class NeonDBService implements DBService {
+    private static instance: NeonDBService;
     private pool: Pool;
 
-    constructor(connectionString: string) {
+    private constructor(connectionString: string) {
         this.pool = new Pool({ connectionString });
-        console.log("DB connected")
+        console.log("NeonDB connected")
+    }
+
+    static getInstance(connectionString: string): NeonDBService {
+        if (!NeonDBService.instance) {
+            NeonDBService.instance = new NeonDBService(connectionString);
+        }
+        return NeonDBService.instance;
     }
 
     async storeOrUpdateUserToken(token: Partial<UserToken> & Pick<UserToken, 'user_id'>): Promise<void> {
@@ -79,13 +87,13 @@ export class NeonDBService implements DBService {
         }
     }
 
-    async getUserToken(userId: string): Promise<UserToken | null> {
+    async getUserToken(userId: string): Promise<UserToken> {
         const result = await this.pool.query<UserToken>(
             'SELECT user_name, user_email, user_id, access_token, refresh_token, expiry FROM user_tokens WHERE user_id = $1',
             [userId]
         );
 
-        return result.rows[0] || null;
+        return result.rows[0] || ({} as UserToken);
     }
 
     async close(): Promise<void> {
