@@ -78,7 +78,7 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
         </div>
       )}
 
-      {slide.layout && (
+      {/* {slide.layout && (
         <div className="slide-preview-panel">
           <label className="section-label">Preview</label>
           <div className="slide-preview">
@@ -144,7 +144,7 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

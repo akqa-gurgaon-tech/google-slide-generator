@@ -3,19 +3,70 @@ import { useNavigate } from "react-router-dom";
 
 const PresentationsPage = ({ onLogout, userInfo }) => {
   const [isCreating, setIsCreating] = useState(false);
+  const [showTitleDialog, setShowTitleDialog] = useState(false);
+  const [presentationTitle, setPresentationTitle] = useState("");
   const navigate = useNavigate();
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = () => {
+    setShowTitleDialog(true);
+  };
+
+  const handleCreateWithTitle = async () => {
     setIsCreating(true);
 
-    // Simulate creating new presentation
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setShowTitleDialog(false);
 
-    // Clear any existing slides from localStorage for new presentation
-    localStorage.removeItem("slides");
+    try {
+      // Call the API to create a new presentation
+      const response = await fetch(
+        "http://localhost:5000/api/create-presentation",
+        {
+          credentials: "include",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            presentationTitle:
+              presentationTitle.trim() || "Untitled presentation",
+          }),
+        }
+      );
 
-    navigate("/editor");
-    setIsCreating(false);
+      const data = await response.json();
+
+      if (data.presentationId) {
+        // Store presentation data in localStorage
+        const presentationData = {
+          presentationId: data.presentationId,
+          title: data.title,
+          url: data.url,
+          createdAt: new Date().toISOString(),
+        };
+
+        localStorage.setItem(
+          "currentPresentation",
+          JSON.stringify(presentationData)
+        );
+        localStorage.removeItem("slides"); // Clear any existing slides
+
+        console.log("New presentation created:", data);
+        navigate("/editor");
+      } else {
+        alert("Failed to create presentation. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating presentation:", error);
+      alert(
+        "Error creating presentation. Please check your connection and try again."
+      );
+    } finally {
+      setIsCreating(false);
+      setPresentationTitle("");
+    }
+  };
+
+  const handleCancelDialog = () => {
+    setShowTitleDialog(false);
+    setPresentationTitle("");
   };
 
   const handleOpenExisting = () => {
@@ -27,6 +78,40 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
 
   return (
     <div className="presentations-page">
+      {/* Title Dialog Modal */}
+      {showTitleDialog && (
+        <div className="modal-overlay">
+          <div className="title-dialog">
+            <h3>Create New Presentation</h3>
+            <p>Enter a title for your presentation (optional):</p>
+            <input
+              type="text"
+              className="title-input"
+              placeholder="Untitled presentation"
+              value={presentationTitle}
+              onChange={(e) => setPresentationTitle(e.target.value)}
+              maxLength={100}
+              autoFocus
+            />
+            <div className="dialog-buttons">
+              <button
+                className="dialog-button secondary"
+                onClick={handleCancelDialog}
+              >
+                Cancel
+              </button>
+              <button
+                className="dialog-button primary"
+                onClick={handleCreateWithTitle}
+                disabled={isCreating}
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="presentations-header">
         <div className="header-left">
           <div className="app-logo">
@@ -36,7 +121,7 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
         </div>
         <div className="header-right">
           <div className="user-info">
-            <span className="user-name">👤 {userInfo?.name || 'User'}</span>
+            <span className="user-name">👤 {userInfo?.name || "User"}</span>
             <button className="logout-button" onClick={onLogout}>
               Sign Out
             </button>
