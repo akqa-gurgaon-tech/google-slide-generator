@@ -1033,3 +1033,301 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #9aa0a6;
 }
+
+
+/* Modal Dialog Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.title-dialog {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.title-dialog h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.title-dialog p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.title-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.title-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dialog-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dialog-button.secondary {
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+}
+
+.dialog-button.secondary:hover {
+  background: var(--border-color);
+
+}
+
+.dialog-button.primary {
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+}
+
+.dialog-button.primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.dialog-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Editable Title Styles */
+.editable-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+}
+
+.title-display {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 400px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.title-display:hover {
+  background-color: var(--background-secondary);
+}
+
+.title-input {
+  padding: 8px 12px;
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: white;
+  outline: none;
+  min-width: 200px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.saving-indicator {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Tab Container Styles */
+.tab-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.tab-header {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--background-secondary);
+  padding: 0;
+  margin: 0;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.tab-button:hover {
+  background: var(--background-hover);
+  color: var(--text-primary);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  background: white;
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.tab-content {
+  flex: 1;
+  background: white;
+  overflow: hidden;
+}
+
+.tab-panel {
+  height: 100%;
+  padding: 0;
+}
+
+/* Editor Content Layout */
+.editor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Preview Container Styles */
+.preview-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+.preview-header {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.preview-header h3 {
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.preview-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Empty preview state */
+.preview-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.preview-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.preview-empty h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.preview-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Update main content layout to accommodate tabs */
+.main-content {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  min-height: 0;
+}
+
+.main-content .editor-content {
+  flex: 1;
+  min-height: 0;
+}

@@ -1,18 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import SlidePanel from "../components/SlidePanel";
 import SlideEditor from "../components/SlideEditor";
+import { PresentationViewer } from "../components/PresentationViewer";
+import { TabContainer, TabPanel } from "../components/TabContainer";
 
 function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
     return JSON.parse(localStorage.getItem("slides")) || [];
   });
 
+  const [currentPresentation, setCurrentPresentation] = useState(() => {
+    return JSON.parse(localStorage.getItem("currentPresentation")) || null;
+  });
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [presentationUrl, setPresentationUrl] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
+  const tabContainerRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem("slides", JSON.stringify(slides));
@@ -72,19 +79,43 @@ function EditorPage({ onLogout, userInfo }) {
 
     setIsCreating(true);
     try {
-      console.log("Submitting slides:", slides);
+      // console.log("Submitting slides:", slides);
       const response = await fetch(
         "http://localhost:5000/presentation/create",
         {
           credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slides }),
+          body: JSON.stringify({
+            slides,
+            presentationId: currentPresentation.presentationId,
+          }),
         }
       );
       const data = await response.json();
       if (data.url) {
         setPresentationUrl(data.url);
+
+        // Update the current presentation with the new URL
+        if (currentPresentation) {
+          const updatedPresentation = {
+            ...currentPresentation,
+            url: data.url,
+            lastGenerated: new Date().toISOString(),
+          };
+          setCurrentPresentation(updatedPresentation);
+          localStorage.setItem(
+            "currentPresentation",
+            JSON.stringify(updatedPresentation)
+          );
+        }
+
+        // Automatically switch to the preview tab to show the generated presentation
+        if (tabContainerRef.current) {
+          setTimeout(() => {
+            tabContainerRef.current.switchToTab(1); // Switch to preview tab
+          }, 500); // Small delay to ensure URL is set
+        }
       } else {
         alert("Failed to create presentation. Please try again.");
       }
@@ -102,6 +133,48 @@ function EditorPage({ onLogout, userInfo }) {
     navigate("/presentations");
   };
 
+  const handleTitleChange = async (newTitle) => {
+    if (!currentPresentation) return Promise.resolve();
+
+    try {
+      // Update localStorage immediately
+      const updatedPresentation = {
+        ...currentPresentation,
+        title: newTitle,
+      };
+      setCurrentPresentation(updatedPresentation);
+      localStorage.setItem(
+        "currentPresentation",
+        JSON.stringify(updatedPresentation)
+      );
+
+      // Update Google Drive if we have a presentation ID
+      if (currentPresentation.presentationId) {
+        const response = await fetch(
+          "http://localhost:5000/api/update-presentation-title",
+          {
+            credentials: "include",
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              presentationId: currentPresentation.presentationId,
+              title: newTitle,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to update title in Google Drive");
+        }
+
+        console.log("Presentation title updated successfully");
+      }
+    } catch (error) {
+      console.error("Error updating presentation title:", error);
+      throw error;
+    }
+  };
+
   const currentSlide = slides[activeIndex];
 
   return (
@@ -114,6 +187,9 @@ function EditorPage({ onLogout, userInfo }) {
         onBack={handleBackToPresentations}
         onLogout={onLogout}
         userInfo={userInfo}
+        presentationTitle={currentPresentation?.title}
+        onTitleChange={handleTitleChange}
+        isEditable={!!currentPresentation}
       />
 
       <div className="main-content">
@@ -124,11 +200,48 @@ function EditorPage({ onLogout, userInfo }) {
           onSlideDelete={handleSlideDelete}
         />
 
-        <SlideEditor
-          slide={currentSlide}
-          onUpdateLayout={updateSlideLayout}
-          onUpdateInput={updateInput}
-        />
+        <div className="editor-content">
+          <TabContainer ref={tabContainerRef} defaultTab={0}>
+            <TabPanel label="Slide Content">
+              <SlideEditor
+                slide={currentSlide}
+                onUpdateLayout={updateSlideLayout}
+                onUpdateInput={updateInput}
+              />
+            </TabPanel>
+            <TabPanel label="Presentation Preview">
+              <div className="preview-container">
+                <div className="preview-header">
+                  {presentationUrl ? (
+                    <p className="preview-subtitle">
+                      Preview updates automatically when you generate slides
+                    </p>
+                  ) : (
+                    <p className="preview-subtitle">
+                      Click "Generate Slides" to see your presentation preview
+                    </p>
+                  )}
+                </div>
+                {presentationUrl || currentPresentation.presentationId ? (
+                  <PresentationViewer
+                    url={presentationUrl}
+                    presentationId={currentPresentation.presentationId}
+                    key={presentationUrl} // Force re-render when URL changes
+                  />
+                ) : (
+                  <div className="preview-empty">
+                    <div className="preview-empty-icon">📊</div>
+                    <h4>No Presentation Generated Yet</h4>
+                    <p>
+                      Add some slides and click "Generate Slides" to see your
+                      presentation preview here.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabPanel>
+          </TabContainer>
+        </div>
       </div>
     </div>
   );
