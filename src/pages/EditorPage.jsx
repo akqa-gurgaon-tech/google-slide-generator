@@ -25,25 +25,55 @@ function EditorPage({ onLogout, userInfo }) {
     localStorage.setItem("slides", JSON.stringify(slides));
   }, [slides]);
 
+  const prevSlidesRef = useRef(slides);
   useEffect(() => {
-    if (!slides || slides.length === 0) return; // no slides, skip
+    if (prevSlidesRef.current.length === 0) {
+      prevSlidesRef.current = slides;
+      return;
+    }
 
     const timer = setTimeout(() => {
-      updateSlidesData();
+      // Compare by id
+      const changedSlide = slides.filter((slide) => {
+        const prevSlide = prevSlidesRef.current.find(
+          (s) => s.slideId === slide.slideId
+        );
+        return (
+          !prevSlide || JSON.stringify(prevSlide) !== JSON.stringify(slide)
+        );
+      });
+
+      if (changedSlide.length > 0) {
+        updateSlidesData(currentPresentation.presentationId, changedSlide);
+        // console.log("changedSlide slides:", changedSlide);
+      }
+      // Update previous ref
+      prevSlidesRef.current = slides;
     }, 5000);
 
     return () => clearTimeout(timer); // cleanup if slides changes before 5s
   }, [slides]);
 
-  const updateSlidesData = async () => {
+  // useEffect(() => {
+  //   if (!slides || slides.length === 0) return; // no slides, skip
+
+  //   const timer = setTimeout(() => {
+  //     updateSlidesData();
+  //   }, 5000);
+
+  //   return () => clearTimeout(timer); // cleanup if slides changes before 5s
+  // }, [slides]);
+
+  const updateSlidesData = async (presentationId, changedSlide) => {
     try {
       const response = await fetch("http://localhost:5000/ppt/update", {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pptJson: currentPresentation,
-          slidesArr: slides,
+          // pptJson: currentPresentation,
+          presentationId: presentationId,
+          slidesArr: changedSlide,
         }),
       });
       const data = await response.json();

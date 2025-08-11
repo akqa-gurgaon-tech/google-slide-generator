@@ -123,9 +123,7 @@ app.post("/presentation/create", async (req, res) => {
 });
 
 app.get("/ppt/get", async (req, res) => {
-  res.json(
-     await mongoClient.getAllPpt(),
-  );
+  res.json(await mongoClient.getAllPpt());
 });
 
 app.post("/ppt/update", async (req, res) => {
@@ -133,7 +131,7 @@ app.post("/ppt/update", async (req, res) => {
   console.log("json", JSON.stringify(json, null, 2));
 
   await mongoClient
-    .saveDeck(json.pptJson, json.slidesArr)
+    .saveDeck(json.presentationId, json.slidesArr)
     .then(() => {
       res
         .status(200)
