@@ -1,0 +1,10 @@
+---
+description: Google slide generator
+globs:
+alwaysApply: false
+---
+
+- Use best coding practices 
+- Make sure exisiting functionality does not get impacted while appending the changes
+
+

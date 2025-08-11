@@ -10,6 +10,8 @@ const Toolbar = ({
   presentationTitle,
   onTitleChange,
   isEditable = false,
+  onPresentationThemeSelect,
+  currentTheme,
 }) => {
   return (
     <div className="toolbar">
@@ -32,6 +34,17 @@ const Toolbar = ({
           <span className="btn-icon">+</span>
           <span className="btn-text">Add Slide</span>
         </button>
+        
+        {onPresentationThemeSelect && (
+          <button
+            className="toolbar-btn theme"
+            onClick={onPresentationThemeSelect}
+            title={`Current theme: ${currentTheme?.name || 'Default'}`}
+          >
+            <span className="btn-icon">🎨</span>
+            <span className="btn-text">Theme</span>
+          </button>
+        )}
       </div>
 
       <div className="toolbar-center">

@@ -5,6 +5,9 @@ import SlidePanel from "../components/SlidePanel";
 import SlideEditor from "../components/SlideEditor";
 import { PresentationViewer } from "../components/PresentationViewer";
 import { TabContainer, TabPanel } from "../components/TabContainer";
+import ThemeSelector from "../components/ThemeSelector.jsx";
+import ThemeCreator from "../components/ThemeCreator.jsx";
+import { themeManager } from "../design-system/ThemeManager.js";
 
 function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
@@ -18,6 +21,10 @@ function EditorPage({ onLogout, userInfo }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [presentationUrl, setPresentationUrl] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showThemeCreator, setShowThemeCreator] = useState(false);
+  const [themeSelectorMode, setThemeSelectorMode] = useState('presentation'); // 'presentation' or 'slide'
+  const [currentTheme, setCurrentTheme] = useState(null);
   const navigate = useNavigate();
   const tabContainerRef = useRef(null);
 
@@ -25,6 +32,7 @@ function EditorPage({ onLogout, userInfo }) {
     localStorage.setItem("slides", JSON.stringify(slides));
   }, [slides]);
 
+<<<<<<< Updated upstream
   const prevSlidesRef = useRef(slides);
   useEffect(() => {
     if (prevSlidesRef.current.length === 0) {
@@ -89,6 +97,21 @@ function EditorPage({ onLogout, userInfo }) {
       );
     }
   };
+=======
+  // Initialize theme manager and load current theme
+  useEffect(() => {
+    const initializeThemes = async () => {
+      try {
+        await themeManager.initialize();
+        setCurrentTheme(themeManager.getActiveTheme());
+      } catch (error) {
+        console.error('Error initializing themes:', error);
+      }
+    };
+    
+    initializeThemes();
+  }, []);
+>>>>>>> Stashed changes
 
   const addSlide = () => {
     const newSlide = {
@@ -144,7 +167,9 @@ function EditorPage({ onLogout, userInfo }) {
 
     setIsCreating(true);
     try {
-      // console.log("Submitting slides:", slides);
+      // Get theme data from theme manager
+      const themeData = themeManager.exportPresentationThemes();
+      
       const response = await fetch(
         "http://localhost:5000/presentation/create",
         {
@@ -154,6 +179,7 @@ function EditorPage({ onLogout, userInfo }) {
           body: JSON.stringify({
             slides,
             presentationId: currentPresentation.presentationId,
+            themes: themeData,
           }),
         }
       );
@@ -240,6 +266,57 @@ function EditorPage({ onLogout, userInfo }) {
     }
   };
 
+  // Theme management functions
+  const handlePresentationThemeSelect = () => {
+    setThemeSelectorMode('presentation');
+    setShowThemeSelector(true);
+  };
+
+  const handleSlideThemeSelect = () => {
+    if (slides[activeIndex]) {
+      setThemeSelectorMode('slide');
+      setShowThemeSelector(true);
+    }
+  };
+
+  const handleThemeSelect = (theme) => {
+    if (themeSelectorMode === 'presentation') {
+      themeManager.setPresentationTheme(theme.id);
+      setCurrentTheme(theme);
+      // Force re-render of all slides with new theme
+      setTimeout(() => {
+        themeManager.applyThemeToAllSlides();
+      }, 100);
+    } else if (themeSelectorMode === 'slide' && slides[activeIndex]) {
+      themeManager.setSlideTheme(slides[activeIndex].id, theme.id);
+      // Force re-render of specific slide
+      setTimeout(() => {
+        themeManager.applyThemeToSpecificSlide(slides[activeIndex].id);
+      }, 100);
+    }
+    setShowThemeSelector(false);
+  };
+
+  const handleCreateTheme = (editingTheme = null) => {
+    setShowThemeCreator(true);
+    // editingTheme parameter can be used to edit existing themes
+  };
+
+  const handleThemeSaved = (savedTheme) => {
+    setShowThemeCreator(false);
+    // Optionally set as active theme
+    if (savedTheme) {
+      setCurrentTheme(savedTheme);
+    }
+  };
+
+  const getCurrentSlideTheme = () => {
+    if (slides[activeIndex]) {
+      return themeManager.getSlideTheme(slides[activeIndex].id);
+    }
+    return currentTheme;
+  };
+
   const currentSlide = slides[activeIndex];
 
   return (
@@ -255,6 +332,8 @@ function EditorPage({ onLogout, userInfo }) {
         presentationTitle={currentPresentation?.title}
         onTitleChange={handleTitleChange}
         isEditable={!!currentPresentation}
+        onPresentationThemeSelect={handlePresentationThemeSelect}
+        currentTheme={currentTheme}
       />
 
       <div className="main-content">
@@ -272,6 +351,8 @@ function EditorPage({ onLogout, userInfo }) {
                 slide={currentSlide}
                 onUpdateLayout={updateSlideLayout}
                 onUpdateInput={updateInput}
+                onSlideThemeSelect={handleSlideThemeSelect}
+                currentSlideTheme={getCurrentSlideTheme()}
               />
             </TabPanel>
             <TabPanel label="Presentation Preview">
@@ -308,6 +389,31 @@ function EditorPage({ onLogout, userInfo }) {
           </TabContainer>
         </div>
       </div>
+
+      {/* Theme Selection Modal */}
+      {showThemeSelector && (
+        <ThemeSelector
+          isOpen={showThemeSelector}
+          onClose={() => setShowThemeSelector(false)}
+          onThemeSelect={handleThemeSelect}
+          onCreateTheme={handleCreateTheme}
+          currentThemeId={
+            themeSelectorMode === 'presentation' 
+              ? currentTheme?.id 
+              : themeManager.slideThemeOverrides.get(slides[activeIndex]?.id)
+          }
+          slideId={themeSelectorMode === 'slide' ? slides[activeIndex]?.id : null}
+        />
+      )}
+
+      {/* Theme Creator Modal */}
+      {showThemeCreator && (
+        <ThemeCreator
+          isOpen={showThemeCreator}
+          onClose={() => setShowThemeCreator(false)}
+          onSave={handleThemeSaved}
+        />
+      )}
     </div>
   );
 }

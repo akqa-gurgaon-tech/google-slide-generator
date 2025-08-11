@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { themeManager } from "../design-system/ThemeManager.js";
 
-const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
+const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput, onSlideThemeSelect, currentSlideTheme }) => {
+  const slidePreviewRef = useRef(null);
   const layouts = {
     TITLE: ["TITLE"],
     TITLE_AND_BODY: ["TITLE", "BODY"],
@@ -19,6 +21,41 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
     { value: "SUBTITLE", label: "Subtitle", icon: "📋" },
   ];
 
+  // Helper function to get CSS class for field type
+  const getFieldClassName = (field) => {
+    const fieldMap = {
+      'TITLE': 'slide-title',
+      'SUBTITLE': 'slide-subtitle', 
+      'BODY': 'slide-body',
+      'LEFT_COLUMN': 'slide-body',
+      'RIGHT_COLUMN': 'slide-body',
+      'CENTERED_TITLE': 'slide-title'
+    };
+    return fieldMap[field] || 'slide-body';
+  };
+
+  // Apply theme when slide changes or theme changes
+  useEffect(() => {
+    if (slide && slidePreviewRef.current) {
+      slidePreviewRef.current.setAttribute('data-slide-id', slide.id);
+      themeManager.applyThemeToSlideElement(slidePreviewRef.current, slide.id);
+    }
+  }, [slide, currentSlideTheme]);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const handleThemeChange = (event) => {
+      if (slide && slidePreviewRef.current && 
+          (event.detail.type === 'presentation' || 
+           (event.detail.type === 'slide' && event.detail.slideId === slide.id))) {
+        themeManager.applyThemeToSlideElement(slidePreviewRef.current, slide.id);
+      }
+    };
+
+    document.addEventListener('themeChanged', handleThemeChange);
+    return () => document.removeEventListener('themeChanged', handleThemeChange);
+  }, [slide]);
+
   if (!slide) {
     return (
       <div className="slide-editor-empty">
@@ -35,8 +72,19 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
     <div className="slide-editor">
       <div className="editor-header">
         <h2>Slide Content</h2>
-        <div className="slide-info">
-          <span className="slide-number">Slide {slide.id}</span>
+        <div className="slide-actions">
+          <div className="slide-info">
+            <span className="slide-number">Slide {slide.id}</span>
+          </div>
+          {onSlideThemeSelect && (
+            <button
+              className="slide-theme-btn"
+              onClick={onSlideThemeSelect}
+              title={`Current theme: ${currentSlideTheme?.name || 'Inherited'}`}
+            >
+              🎨 Theme
+            </button>
+          )}
         </div>
       </div>
 
@@ -65,7 +113,7 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
             <div key={field} className="input-group">
               <label className="input-label">{field.replace("_", " ")}</label>
               <textarea
-                className="content-input"
+                className="content-input slide-input"
                 value={slide.inputs[field] || ""}
                 onChange={(e) => onUpdateInput(field, e.target.value)}
                 placeholder={`Enter ${field
@@ -79,6 +127,30 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput }) => {
       )}
 
       {/* {slide.layout && (
+        <div className="slide-preview-section">
+          <label className="section-label">Live Preview</label>
+          <div className="slide-preview-container">
+            <div 
+              ref={slidePreviewRef}
+              className={`slide-preview slide-content layout-${slide.layout.toLowerCase()}`}
+              data-slide-id={slide.id}
+            >
+              {layouts[slide.layout]?.map((field) => {
+                const fieldClass = getFieldClassName(field);
+                const content = slide.inputs[field] || `Enter ${field.toLowerCase().replace('_', ' ')}`;
+                
+                return (
+                  <div key={field} className={`preview-${field.toLowerCase()} ${fieldClass}`}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )} */}
+
+      {/* OLD COMMENTED PREVIEW: {slide.layout && (
         <div className="slide-preview-panel">
           <label className="section-label">Preview</label>
           <div className="slide-preview">
