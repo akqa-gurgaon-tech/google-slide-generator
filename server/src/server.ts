@@ -13,6 +13,7 @@ import type { DBService } from "./interfaces/DBService.ts";
 import { NeonDBService } from "./services/NeonDBService.ts";
 import type { GoogleAuthService } from "./interfaces/GoogleAuthService.ts";
 import { GoogleAuthServiceImpl } from "./services/GoogleAuthServiceImpl.ts";
+import { MongoDBClient } from "./services/MongoDBClient.ts";
 
 dotenv.config();
 const app = express();
@@ -25,8 +26,10 @@ app.use(
   })
 );
 
+const mongoClient = MongoDBClient.getInstance(process.env.MONGO_URI!);
 const dbService: DBService = NeonDBService.getInstance(process.env.DATABASE_URL!);
 const googleService: GoogleAuthService = new GoogleAuthServiceImpl(dbService);
+
 
 // 🔐 Use sessions to store userId
 app.use(
@@ -116,6 +119,25 @@ app.post("/presentation/create", async (req, res) => {
 
     res.status(500).json({ error: "Failed to create presentation" });
   }
+});
+
+app.get("/ppt/get", async (req, res) => {
+  res.json({
+    test: await mongoClient.getAllPpt(),
+  });
+});
+
+app.post("/ppt/update", async (req, res) => {
+  const json = req.body;
+  
+  await mongoClient.saveDeck(json.pptJson, json.slidesArr)
+    .then(() => {
+      res.status(200).json({ message: "Deck saved successfully" });
+    })
+    .catch((err) => {
+      console.error("Error saving deck:", err);
+      res.status(500).json({ error: "Failed to save deck" });
+    });
 });
 
 app.get("/logout", (req, res) => {
