@@ -1,49 +1,113 @@
-import { MongoClient, ServerApiVersion } from 'mongodb';
-
-
-const uri = process.env.MONGO_URI!;
+import mongoose from 'mongoose';
+import { DeckModel } from '../models/db-schema/deck.ts';
 
 export class MongoDBClient {
+    private static uri: string;
     private static instance: MongoDBClient;
+    
 
-    private client: MongoClient;
-
-    private constructor() {
-        this.client = new MongoClient(uri, {
-            serverApi: {
-                version: ServerApiVersion.v1,
-                strict: true,
-                deprecationErrors: true,
-                }
-            });
-        this.run().catch(console.dir);
+    private constructor(uri: string) {
+        MongoDBClient.uri = uri;
+        console.log('MongoDBClient initialized');
+        this.run();
     }
-
-    public static getInstance(): MongoDBClient {
+    public static getInstance(uri: string): MongoDBClient {
         if (!MongoDBClient.instance) {
-            MongoDBClient.instance = new MongoDBClient();
+            MongoDBClient.instance = new MongoDBClient(uri);
         }
         return MongoDBClient.instance;
     }
-
     private async run() {
+        await mongoose.connect(MongoDBClient.uri)
+            .then(() => console.log('MongoDB connected'))
+            .catch((err: Error) => console.error(err));
+
+        if (!mongoose.connection.db) {
+            throw new Error('MongoDB connection is not established.');
+        }
+    }
+
+    public async saveDeck(pptJson: any, slidesArr: any): Promise<void> {
+        const presentationId = pptJson.presentationId;
+        const title = pptJson.title;
+        const outline = pptJson.outline || '';
+        const themeId = pptJson.themeId || '';
+        const createdBy = pptJson.createdBy || ''
+        const updatedBy = pptJson.updatedBy || '';
+        const createdAt = pptJson.createdAt || new Date();
+        const updatedAt = pptJson.updatedAt || new Date();
+
+        let slides = [];
+
+        for (const slide of slidesArr) {
+            const slideId = slide.slideId;
+            const layout = slide.layout || 'default';
+            const inputs = slide.inputs || {};
+
+            slides.push({
+                slideId,
+                layout,
+                inputs
+            });
+        }
+
+        // check if presentationId already exists
+        const existingDeck = await DeckModel.findOne({ presentationId: presentationId });
+        if (existingDeck) {
+            console.log(`Deck with ID ${presentationId} already exists. Updating...`);
+            existingDeck.title = title;
+            existingDeck.outline = outline;
+            existingDeck.themeId = themeId;
+            existingDeck.createdBy = createdBy;
+            existingDeck.updatedBy = updatedBy;
+            existingDeck.createdAt = createdAt;
+            existingDeck.updatedAt = updatedAt;
+            existingDeck.slidesJson = { slides };
+
+            await existingDeck.save();
+            console.log('✅ Deck updated:', presentationId);
+            return;
+        }
+
         try {
-            // Connect the client to the server	(optional starting in v4.7)
-            await this.client.connect();
-            // Send a ping to confirm a successful connection
-            await this.client.db("admin").command({ ping: 1 });
-            console.log("Pinged your deployment. You successfully connected to MongoDB!");
-        } catch (e) {
-            console.error("Error connecting to MongoDB:", e);
-            this.client.close();
+            const deck = new DeckModel({
+                presentationId: presentationId,
+                title: title,
+                outline: outline,
+                themeId: null,
+                createdBy: createdBy,
+                updatedBy: null,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                slidesJson: { slides: slides }
+            });
+            await deck.save();
+            console.log('✅ Deck saved:', deck.presentationId);
+        } catch (error) {
+            console.error('❌ Error saving deck:', error);
+            throw error;
+        }
+    }
+
+    public async getAllPpt() {
+        if (!mongoose.connection.readyState) {
+            throw new Error('MongoDB connection is not established.');
+        }
+        try {
+            const decks = await DeckModel.find({});
+            return decks;
+        } catch (error) {
+            console.error('❌ Error fetching presentations:', error);
+            throw error;
         }
     }
 
     public async close() {
-        if (this.client) {
-            await this.client.close();
-            console.log("MongoDB connection closed.");
+        if (mongoose.connection.readyState === 1) {
+            await mongoose.connection.close();
+            console.log('MongoDB connection closed');
+        } else {
+            console.log('MongoDB connection is not open, no need to close');
         }
-        MongoDBClient.instance = null; // Reset the instance
     }
 }
