@@ -125,19 +125,23 @@ class ThemeManager {
 
   // Set slide-level theme override
   setSlideTheme(slideId, themeId) {
+    // Ensure slideId is consistently handled as string
+    const slideIdStr = slideId.toString();
+    
     if (themeId === null || themeId === this.activeTheme) {
       // Remove override if setting to null or same as presentation theme
-      this.slideThemeOverrides.delete(slideId);
+      this.slideThemeOverrides.delete(slideIdStr);
     } else {
-      this.slideThemeOverrides.set(slideId, themeId);
+      this.slideThemeOverrides.set(slideIdStr, themeId);
     }
+    
     this.saveSlideThemeOverrides();
     
     // Apply theme to specific slide elements
-    this.applyThemeToSpecificSlide(slideId);
+    this.applyThemeToSpecificSlide(slideIdStr);
     
     // Trigger theme change event
-    this.notifyThemeChange('slide', themeId, slideId);
+    this.notifyThemeChange('slide', themeId, slideIdStr);
   }
 
   // Apply theme to a specific slide by ID
@@ -158,7 +162,8 @@ class ThemeManager {
 
   // Get theme for a specific slide (with fallback to presentation theme)
   getSlideTheme(slideId) {
-    const overrideThemeId = this.slideThemeOverrides.get(slideId);
+    const slideIdStr = slideId.toString();
+    const overrideThemeId = this.slideThemeOverrides.get(slideIdStr);
     return overrideThemeId ? this.getTheme(overrideThemeId) : this.getActiveTheme();
   }
 
@@ -533,7 +538,8 @@ class ThemeManager {
     const slideOverrides = {};
     
     for (const [slideId, themeId] of this.slideThemeOverrides) {
-      slideOverrides[slideId] = this.getTheme(themeId);
+      const theme = this.getTheme(themeId);
+      slideOverrides[slideId] = theme;
     }
     
     return {

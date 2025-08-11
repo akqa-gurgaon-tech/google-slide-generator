@@ -11,7 +11,25 @@ import { themeManager } from "../design-system/ThemeManager.js";
 
 function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
-    return JSON.parse(localStorage.getItem("slides")) || [];
+    const storedSlides = JSON.parse(localStorage.getItem("slides")) || [];
+    
+    // Migrate slides to ensure they all have slideId
+    const migratedSlides = storedSlides.map((slide, index) => {
+      if (!slide.slideId) {
+        return {
+          ...slide,
+          slideId: Date.now() + index, // Ensure unique IDs
+        };
+      }
+      return slide;
+    });
+    
+    // Save migrated slides back to localStorage
+    if (migratedSlides.length > 0 && migratedSlides.some(slide => !storedSlides.find(s => s.slideId === slide.slideId))) {
+      localStorage.setItem("slides", JSON.stringify(migratedSlides));
+    }
+    
+    return migratedSlides;
   });
 
   const [currentPresentation, setCurrentPresentation] = useState(() => {
@@ -167,6 +185,17 @@ function EditorPage({ onLogout, userInfo }) {
       // Get theme data from theme manager
       const themeData = themeManager.exportPresentationThemes();
       
+      // Ensure all slides have slideId before sending
+      const slidesWithId = slides.map((slide, index) => {
+        if (!slide.slideId) {
+          return {
+            ...slide,
+            slideId: Date.now() + index,
+          };
+        }
+        return slide;
+      });
+      
       const response = await fetch(
         "http://localhost:5000/presentation/create",
         {
@@ -174,7 +203,7 @@ function EditorPage({ onLogout, userInfo }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            slides,
+            slides: slidesWithId,
             presentationId: currentPresentation.presentationId,
             themes: themeData,
           }),
@@ -285,10 +314,10 @@ function EditorPage({ onLogout, userInfo }) {
         themeManager.applyThemeToAllSlides();
       }, 100);
     } else if (themeSelectorMode === 'slide' && slides[activeIndex]) {
-      themeManager.setSlideTheme(slides[activeIndex].id, theme.id);
+      themeManager.setSlideTheme(slides[activeIndex].slideId, theme.id);
       // Force re-render of specific slide
       setTimeout(() => {
-        themeManager.applyThemeToSpecificSlide(slides[activeIndex].id);
+        themeManager.applyThemeToSpecificSlide(slides[activeIndex].slideId);
       }, 100);
     }
     setShowThemeSelector(false);
@@ -309,7 +338,7 @@ function EditorPage({ onLogout, userInfo }) {
 
   const getCurrentSlideTheme = () => {
     if (slides[activeIndex]) {
-      return themeManager.getSlideTheme(slides[activeIndex].id);
+      return themeManager.getSlideTheme(slides[activeIndex].slideId);
     }
     return currentTheme;
   };
@@ -397,9 +426,9 @@ function EditorPage({ onLogout, userInfo }) {
           currentThemeId={
             themeSelectorMode === 'presentation' 
               ? currentTheme?.id 
-              : themeManager.slideThemeOverrides.get(slides[activeIndex]?.id)
+              : themeManager.slideThemeOverrides.get(slides[activeIndex]?.slideId)
           }
-          slideId={themeSelectorMode === 'slide' ? slides[activeIndex]?.id : null}
+          slideId={themeSelectorMode === 'slide' ? slides[activeIndex]?.slideId : null}
         />
       )}
 

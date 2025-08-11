@@ -3,6 +3,7 @@ import { themeManager } from "../design-system/ThemeManager.js";
 
 const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput, onSlideThemeSelect, currentSlideTheme }) => {
   const slidePreviewRef = useRef(null);
+  const editorContainerRef = useRef(null);
   const layouts = {
     TITLE: ["TITLE"],
     TITLE_AND_BODY: ["TITLE", "BODY"],
@@ -34,21 +35,30 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput, onSlideThemeSelect,
     return fieldMap[field] || 'slide-body';
   };
 
-  // Apply theme when slide changes or theme changes
+  // Apply theme to content inputs when slide changes or theme changes
   useEffect(() => {
-    if (slide && slidePreviewRef.current) {
-      slidePreviewRef.current.setAttribute('data-slide-id', slide.id);
-      themeManager.applyThemeToSlideElement(slidePreviewRef.current, slide.id);
+    if (slide && editorContainerRef.current) {
+      // Apply theme only to the content editor section
+      const contentEditor = editorContainerRef.current.querySelector('.content-editor');
+      if (contentEditor) {
+        contentEditor.setAttribute('data-slide-id', slide.slideId);
+        themeManager.applyThemeToSlideElement(contentEditor, slide.slideId);
+      }
     }
   }, [slide, currentSlideTheme]);
 
   // Listen for theme changes
   useEffect(() => {
     const handleThemeChange = (event) => {
-      if (slide && slidePreviewRef.current && 
+      if (slide && editorContainerRef.current && 
           (event.detail.type === 'presentation' || 
-           (event.detail.type === 'slide' && event.detail.slideId === slide.id))) {
-        themeManager.applyThemeToSlideElement(slidePreviewRef.current, slide.id);
+           (event.detail.type === 'slide' && event.detail.slideId === slide.slideId))) {
+        // Apply theme only to the content editor section
+        const contentEditor = editorContainerRef.current.querySelector('.content-editor');
+        if (contentEditor) {
+          contentEditor.setAttribute('data-slide-id', slide.slideId);
+          themeManager.applyThemeToSlideElement(contentEditor, slide.slideId);
+        }
       }
     };
 
@@ -69,12 +79,12 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput, onSlideThemeSelect,
   }
 
   return (
-    <div className="slide-editor">
+    <div className="slide-editor" ref={editorContainerRef}>
       <div className="editor-header">
         <h2>Slide Content</h2>
         <div className="slide-actions">
           <div className="slide-info">
-            <span className="slide-number">Slide {slide.id}</span>
+            <span className="slide-number">Slide {slide.slideId}</span>
           </div>
           {onSlideThemeSelect && (
             <button
@@ -133,7 +143,7 @@ const SlideEditor = ({ slide, onUpdateLayout, onUpdateInput, onSlideThemeSelect,
             <div 
               ref={slidePreviewRef}
               className={`slide-preview slide-content layout-${slide.layout.toLowerCase()}`}
-              data-slide-id={slide.id}
+              data-slide-id={slide.slideId}
             >
               {layouts[slide.layout]?.map((field) => {
                 const fieldClass = getFieldClassName(field);

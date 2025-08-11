@@ -105,29 +105,8 @@ app.post("/presentation/create", async (req, res) => {
     const client = await googleService.getClientForUser(userId);
     const slidesApi = google.slides({ version: "v1", auth: client });
     
-    // Debug: Log theme data being received
-    console.log("🎨 Theme data received:", JSON.stringify(themes, null, 2));
-    console.log("📊 Slides data:", JSON.stringify(slides.map(s => ({ id: s.id, layout: s.layout })), null, 2));
-    
-    // Debug: Log specific font data from presentation theme
-    if (themes?.presentationTheme) {
-      console.log("🎨 Presentation theme font families:", {
-        primary: themes.presentationTheme.typography?.fontFamily?.primary,
-        secondary: themes.presentationTheme.typography?.fontFamily?.secondary,
-        fullTypography: themes.presentationTheme.typography
-      });
-    }
-    
     // Apply themes to slides before creating presentation
     const themedSlides = applyThemesToSlides(slides, themes);
-    
-    // Debug: Log themed slides
-    console.log("🎨 Themed slides:", JSON.stringify(themedSlides.map(s => ({ 
-      id: s.id, 
-      layout: s.layout, 
-      hasTheme: !!s.theme,
-      themeColors: s.theme?.colors?.background?.primary || 'none'
-    })), null, 2));
     
     const url = await createPresentation(slidesApi, themedSlides, presentationId);
     console.log("Generated ppt url: ", url);

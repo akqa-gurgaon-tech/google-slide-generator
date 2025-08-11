@@ -372,6 +372,7 @@ body {
   font-size: 14px;
   font-family: inherit;
   background: #fff;
+  color: #202124;
   cursor: pointer;
   transition: border-color 0.2s ease;
   appearance: none;
@@ -391,6 +392,8 @@ body {
 .layout-dropdown option {
   padding: 8px 12px;
   font-size: 14px;
+  background: #fff;
+  color: #202124;
 }
 
 /* Content Editor */
@@ -406,7 +409,7 @@ body {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #202124;
+  color: #5f6368;
   margin-bottom: 8px;
   text-transform: capitalize;
 }
@@ -420,6 +423,15 @@ body {
   font-family: inherit;
   resize: vertical;
   transition: border-color 0.2s ease;
+  color: #202124;
+  background-color: #ffffff;
+}
+
+/* Theme-specific styling for content inputs */
+.content-editor[data-slide-id] .content-input {
+  color: var(--slide-text-primary, #202124);
+  background-color: var(--slide-bg-primary, #ffffff);
+  border-color: var(--slide-text-secondary, #dadce0);
 }
 
 .content-input:focus {
@@ -428,8 +440,18 @@ body {
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 }
 
+/* Theme-specific focus styling for content inputs */
+.content-editor[data-slide-id] .content-input:focus {
+  border-color: var(--slide-accent-primary, #1a73e8);
+}
+
 .content-input::placeholder {
   color: #9aa0a6;
+}
+
+/* Theme-specific placeholder styling for content inputs */
+.content-editor[data-slide-id] .content-input::placeholder {
+  color: var(--slide-text-secondary, #9aa0a6);
 }
 
 /* Slide Preview */

@@ -55,8 +55,8 @@ const SlideThumbnail = ({ slide, index, isActive, onClick, onDelete }) => {
   // Apply theme when slide changes or theme changes
   useEffect(() => {
     if (slide && thumbnailRef.current) {
-      thumbnailRef.current.setAttribute('data-slide-id', slide.id);
-      themeManager.applyThemeToSlideElement(thumbnailRef.current, slide.id);
+      thumbnailRef.current.setAttribute('data-slide-id', slide.slideId);
+      themeManager.applyThemeToSlideElement(thumbnailRef.current, slide.slideId);
     }
   }, [slide]);
 
@@ -65,8 +65,8 @@ const SlideThumbnail = ({ slide, index, isActive, onClick, onDelete }) => {
     const handleThemeChange = (event) => {
       if (slide && thumbnailRef.current && 
           (event.detail.type === 'presentation' || 
-           (event.detail.type === 'slide' && event.detail.slideId === slide.id))) {
-        themeManager.applyThemeToSlideElement(thumbnailRef.current, slide.id);
+           (event.detail.type === 'slide' && event.detail.slideId === slide.slideId))) {
+        themeManager.applyThemeToSlideElement(thumbnailRef.current, slide.slideId);
       }
     };
 
@@ -79,7 +79,7 @@ const SlideThumbnail = ({ slide, index, isActive, onClick, onDelete }) => {
       ref={thumbnailRef}
       className={`slide-thumbnail ${isActive ? "active" : ""}`}
       onClick={() => onClick(index)}
-      data-slide-id={slide.id}
+      data-slide-id={slide.slideId}
     >
       {getSlidePreview()}
       <button

@@ -11,7 +11,16 @@ export function applyThemesToSlides(slides: any[], themes?: any): any[] {
 
   return slides.map(slide => {
     // Get theme for this slide (slide override or presentation theme)
-    const slideTheme = slideOverrides?.[slide.id] || presentationTheme;
+    if (!slide.slideId) {
+      return {
+        ...slide,
+        theme: presentationTheme,
+        styling: generateSlideStyleRequests(presentationTheme),
+      };
+    }
+    
+    const slideIdStr = slide.slideId.toString();
+    const slideTheme = slideOverrides?.[slideIdStr] || presentationTheme;
     
     if (!slideTheme) {
       return slide;
@@ -75,10 +84,20 @@ export function hexToRgb(hex: string): { red: number; green: number; blue: numbe
 
 // Apply text styling based on theme
 export function generateTextStyleRequests(theme: any, textType: 'title' | 'subtitle' | 'body' | 'caption'): any {
-  const textStyle = theme.typography?.styles?.[`slide${textType.charAt(0).toUpperCase() + textType.slice(1)}`];
+  // Map text types to theme style keys
+  const styleKeyMap = {
+    'title': 'slideTitle',
+    'subtitle': 'slideSubtitle', 
+    'body': 'bodyText',
+    'caption': 'caption'
+  };
+  
+  const styleKey = styleKeyMap[textType];
+  const textStyle = theme.typography?.styles?.[styleKey];
   
   if (!textStyle) {
-    console.log(`⚠️ No text style found for ${textType}`);
+    console.log(`⚠️ No text style found for ${textType} (looking for ${styleKey})`);
+    console.log(`⚠️ Available styles:`, Object.keys(theme.typography?.styles || {}));
     return {};
   }
 

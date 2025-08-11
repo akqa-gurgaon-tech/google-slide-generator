@@ -67,10 +67,10 @@ export async function createPresentation(
     // 6. Build theme styling requests if theme is present
     const themeRequests: any[] = [];
     
-    console.log(`🎨 Processing slide ${slide.id} with theme:`, slide.theme ? 'YES' : 'NO');
+    console.log(`🎨 Processing slide ${slide.slideId || 'UNDEFINED'} with theme:`, slide.theme ? 'YES' : 'NO');
     if (slide.theme) {
-      console.log(`🎨 Theme colors for slide ${slide.id}:`, slide.theme.colors);
-      console.log(`🎨 Theme typography for slide ${slide.id}:`, slide.theme.typography);
+      console.log(`🎨 Theme colors for slide ${slide.slideId || 'UNDEFINED'}:`, slide.theme.colors);
+      console.log(`🎨 Theme typography for slide ${slide.slideId || 'UNDEFINED'}:`, slide.theme.typography);
       
       // Apply background styling
       if (slide.theme.colors?.background?.primary) {
