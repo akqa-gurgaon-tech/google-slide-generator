@@ -44,7 +44,7 @@ function EditorPage({ onLogout, userInfo }) {
       });
 
       if (changedSlide.length > 0) {
-        updateSlidesData(currentPresentation.presentationId, changedSlide);
+        updateSlidesData(currentPresentation, changedSlide);
         // console.log("changedSlide slides:", changedSlide);
       }
       // Update previous ref
@@ -64,15 +64,14 @@ function EditorPage({ onLogout, userInfo }) {
   //   return () => clearTimeout(timer); // cleanup if slides changes before 5s
   // }, [slides]);
 
-  const updateSlidesData = async (presentationId, changedSlide) => {
+  const updateSlidesData = async (curre, changedSlide) => {
     try {
       const response = await fetch("http://localhost:5000/ppt/update", {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // pptJson: currentPresentation,
-          presentationId: presentationId,
+          pptJson: currentPresentation,
           slidesArr: changedSlide,
         }),
       });

@@ -131,7 +131,7 @@ app.post("/ppt/update", async (req, res) => {
   console.log("json", JSON.stringify(json, null, 2));
 
   await mongoClient
-    .saveDeck(json.presentationId, json.slidesArr)
+    .saveDeck(json.pptJson, json.slidesArr)
     .then(() => {
       res
         .status(200)

@@ -27,10 +27,7 @@ export class MongoDBClient {
     }
   }
 
-  public async saveDeck(
-    presentationId: string,
-    slidesArr: any[]
-  ): Promise<void> {
+  public async saveDeck(pptJson: any, slidesArr: any[]): Promise<void> {
     // Normalize input slides
     const newSlides = slidesArr.map((slide) => ({
       slideId: slide.slideId,
@@ -39,10 +36,14 @@ export class MongoDBClient {
     }));
 
     // Find existing deck
-    const existingDeck = await DeckModel.findOne({ presentationId });
+    const existingDeck = await DeckModel.findOne({
+      presentationId: pptJson.presentationId,
+    });
 
     if (existingDeck) {
-      console.log(`Deck with ID ${presentationId} exists. Updating slides...`);
+      console.log(
+        `Deck with ID ${pptJson.presentationId} exists. Updating slides...`
+      );
 
       const prevSlides = existingDeck.slidesJson?.slides || [];
 
@@ -61,11 +62,31 @@ export class MongoDBClient {
       // Update metadata (assuming variables exist in scope)
 
       await existingDeck.save();
-      console.log("✅ Deck updated:", presentationId);
+      console.log("✅ Deck updated:", pptJson.presentationId);
       return;
     }
 
     // Create new deck
+    else {
+      try {
+        const deck = new DeckModel({
+          presentationId: pptJson.presentationId,
+          title: pptJson.title,
+          outline: pptJson.outline,
+          themeId: null,
+          createdBy: pptJson.createdBy,
+          updatedBy: null,
+          createdAt: pptJson.createdAt,
+          updatedAt: pptJson.updatedAt,
+          slidesJson: { slides: newSlides },
+        });
+        await deck.save();
+        console.log("✅ Deck saved:", deck.presentationId);
+      } catch (error) {
+        console.error("❌ Error saving deck:", error);
+        throw error;
+      }
+    }
   }
 
   public async getAllPpt() {
