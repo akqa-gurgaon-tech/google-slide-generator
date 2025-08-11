@@ -27,9 +27,10 @@ app.use(
 );
 
 const mongoClient = MongoDBClient.getInstance(process.env.MONGO_URI!);
-const dbService: DBService = NeonDBService.getInstance(process.env.DATABASE_URL!);
+const dbService: DBService = NeonDBService.getInstance(
+  process.env.DATABASE_URL!
+);
 const googleService: GoogleAuthService = new GoogleAuthServiceImpl(dbService);
-
 
 // 🔐 Use sessions to store userId
 app.use(
@@ -129,14 +130,18 @@ app.get("/ppt/get", async (req, res) => {
 
 app.post("/ppt/update", async (req, res) => {
   const json = req.body;
-  
-  await mongoClient.saveDeck(json.pptJson, json.slidesArr)
+  console.log("json", JSON.stringify(json, null, 2));
+
+  await mongoClient
+    .saveDeck(json.pptJson, json.slidesArr)
     .then(() => {
-      res.status(200).json({ message: "Deck saved successfully" });
+      res
+        .status(200)
+        .json({ success: true, message: "Deck saved successfully" });
     })
     .catch((err) => {
       console.error("Error saving deck:", err);
-      res.status(500).json({ error: "Failed to save deck" });
+      res.status(500).json({ success: false, message: "Failed to save deck" });
     });
 });
 

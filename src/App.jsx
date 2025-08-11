@@ -73,7 +73,7 @@ function App() {
     const data = await response.json();
     return {
       isLoggedIn: data.loggedIn,
-      userInfo: data.userInfo || null
+      userInfo: data.userInfo || null,
     };
   };
 
@@ -83,6 +83,7 @@ function App() {
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("userInfo");
     localStorage.removeItem("slides");
+    localStorage.removeItem("currentPresentation");
     const response = await fetch("http://localhost:5000/logout", {
       credentials: "include", // important to send session cookie
     });
@@ -119,7 +120,10 @@ function App() {
             path="/presentations"
             element={
               isAuthenticated ? (
-                <PresentationsPage onLogout={handleLogout} userInfo={userInfo} />
+                <PresentationsPage
+                  onLogout={handleLogout}
+                  userInfo={userInfo}
+                />
               ) : (
                 <Navigate to="/login" replace />
               )
