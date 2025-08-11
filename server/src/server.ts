@@ -122,9 +122,9 @@ app.post("/presentation/create", async (req, res) => {
 });
 
 app.get("/ppt/get", async (req, res) => {
-  res.json({
-    test: await mongoClient.getAllPpt(),
-  });
+  res.json(
+     await mongoClient.getAllPpt(),
+  );
 });
 
 app.post("/ppt/update", async (req, res) => {

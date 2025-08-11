@@ -25,24 +25,6 @@ export class MongoDBClient {
         if (!mongoose.connection.db) {
             throw new Error('MongoDB connection is not established.');
         }
-        const collections = await mongoose.connection.db.listCollections().toArray();
-        const exists = collections.some(col => col.name === 'deck');
-
-        if (!exists) {
-            console.log('❌ Collection "deck" does not exist. Will create by inserting dummy document...');
-
-            const dummyDeck = new DeckModel({
-                deckId: 'temp',
-                title: 'Temporary Deck',
-                slidesJson: { slides: [] }
-            });
-            await dummyDeck.save();
-
-            console.log('✅ "deck" collection created');
-        } else {
-            console.log('✅ "deck" collection already exists');
-        }
-
     }
 
     public async saveDeck(pptJson: any, slidesArr: any): Promise<void> {
@@ -119,8 +101,6 @@ export class MongoDBClient {
             throw error;
         }
     }
-
-
 
     public async close() {
         if (mongoose.connection.readyState === 1) {
