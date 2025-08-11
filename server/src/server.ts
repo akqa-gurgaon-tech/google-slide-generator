@@ -133,9 +133,20 @@ app.get("/ppt/get", async (req, res) => {
 
 app.post("/ppt/update", async (req, res) => {
   const json = req.body;
+  const userId = req.session.userId;
+
+  // Get user information if available
+  let userInfo = null;
+  if (userId) {
+    try {
+      userInfo = await dbService.getUserToken(userId);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+    }
+  }
 
   await mongoClient
-    .saveDeck(json.pptJson, json.slidesArr)
+    .saveDeck(json.pptJson, json.slidesArr, json.themes, userInfo)
     .then(() => {
       res
         .status(200)

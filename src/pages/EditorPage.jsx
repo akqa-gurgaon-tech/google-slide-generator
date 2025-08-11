@@ -107,6 +107,9 @@ function EditorPage({ onLogout, userInfo }) {
 
   const updateSlidesData = async (curre, changedSlide) => {
     try {
+      // Get theme data from theme manager
+      const themeData = themeManager.exportPresentationThemes();
+      
       const response = await fetch("http://localhost:5000/ppt/update", {
         credentials: "include",
         method: "POST",
@@ -114,6 +117,7 @@ function EditorPage({ onLogout, userInfo }) {
         body: JSON.stringify({
           pptJson: currentPresentation,
           slidesArr: changedSlide,
+          themes: themeData,
         }),
       });
       const data = await response.json();
