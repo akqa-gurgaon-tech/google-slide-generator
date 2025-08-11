@@ -199,7 +199,6 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
               <span className="button-icon">📁</span>
               Open Existing
             </button>
-            <div className="coming-soon">Coming Soon</div>
           </div>
         </div>
 
