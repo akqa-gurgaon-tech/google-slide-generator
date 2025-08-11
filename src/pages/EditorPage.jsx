@@ -32,7 +32,6 @@ function EditorPage({ onLogout, userInfo }) {
     localStorage.setItem("slides", JSON.stringify(slides));
   }, [slides]);
 
-<<<<<<< Updated upstream
   const prevSlidesRef = useRef(slides);
   useEffect(() => {
     if (prevSlidesRef.current.length === 0) {
@@ -97,7 +96,6 @@ function EditorPage({ onLogout, userInfo }) {
       );
     }
   };
-=======
   // Initialize theme manager and load current theme
   useEffect(() => {
     const initializeThemes = async () => {
@@ -111,7 +109,6 @@ function EditorPage({ onLogout, userInfo }) {
     
     initializeThemes();
   }, []);
->>>>>>> Stashed changes
 
   const addSlide = () => {
     const newSlide = {
