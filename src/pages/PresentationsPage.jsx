@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PresentationSelector from "../components/PresentationSelector";
 
 const PresentationsPage = ({ onLogout, userInfo }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [showTitleDialog, setShowTitleDialog] = useState(false);
+  const [showPresentationSelector, setShowPresentationSelector] =
+    useState(false);
   const [presentationTitle, setPresentationTitle] = useState("");
   const navigate = useNavigate();
 
@@ -70,10 +73,36 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
   };
 
   const handleOpenExisting = () => {
-    // TODO: Implement in the future - load from database
-    alert(
-      "Open existing presentations feature will be implemented in the future!"
+    setShowPresentationSelector(true);
+  };
+
+  const handleSelectPresentation = (presentation) => {
+    // Store the selected presentation data in localStorage
+    const presentationData = {
+      presentationId: presentation.presentationId,
+      title: presentation.title,
+      url: `https://docs.google.com/presentation/d/${presentation.presentationId}/edit`,
+      createdAt: presentation.createdAt,
+    };
+
+    localStorage.setItem(
+      "currentPresentation",
+      JSON.stringify(presentationData)
     );
+    console.log("presentation in handleSelectPresentation", presentation);
+    localStorage.setItem(
+      "slides",
+      JSON.stringify(presentation.slidesJson.slides || [])
+    );
+
+    console.log("Selected presentation:", presentation);
+
+    // Navigate to editor page
+    navigate("/editor");
+  };
+
+  const handleClosePresentationSelector = () => {
+    setShowPresentationSelector(false);
   };
 
   return (
@@ -187,6 +216,13 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
           </div>
         </div>
       </div>
+
+      {/* Presentation Selector Modal */}
+      <PresentationSelector
+        isOpen={showPresentationSelector}
+        onClose={handleClosePresentationSelector}
+        onSelectPresentation={handleSelectPresentation}
+      />
     </div>
   );
 };

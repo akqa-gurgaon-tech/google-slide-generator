@@ -25,9 +25,45 @@ function EditorPage({ onLogout, userInfo }) {
     localStorage.setItem("slides", JSON.stringify(slides));
   }, [slides]);
 
+  useEffect(() => {
+    if (!slides || slides.length === 0) return; // no slides, skip
+
+    const timer = setTimeout(() => {
+      updateSlidesData();
+    }, 5000);
+
+    return () => clearTimeout(timer); // cleanup if slides changes before 5s
+  }, [slides]);
+
+  const updateSlidesData = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/ppt/update", {
+        credentials: "include",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pptJson: currentPresentation,
+          slidesArr: slides,
+        }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("Slides data updated successfully");
+      } else {
+        console.log("Failed to save slides data!");
+      }
+    } catch (error) {
+      console.error("Error creating presentation:", error);
+      alert(
+        "Error fetching presentation. Please check your connection and try again."
+      );
+    }
+  };
+
   const addSlide = () => {
     const newSlide = {
-      id: Date.now(),
+      slideId: Date.now(),
       layout: "",
       inputs: {},
     };
@@ -61,11 +97,11 @@ function EditorPage({ onLogout, userInfo }) {
   };
 
   const handleSlideDelete = (index) => {
-    const updatedSlides = slides.filter((_, sIdx) => sIdx !== index);
-    setSlides(updatedSlides);
+    const upda = slides.filter((_, sIdx) => sIdx !== index);
+    setSlides(upda);
 
-    if (activeIndex >= updatedSlides.length) {
-      setActiveIndex(Math.max(0, updatedSlides.length - 1));
+    if (activeIndex >= upda.length) {
+      setActiveIndex(Math.max(0, upda.length - 1));
     } else if (index === activeIndex) {
       setActiveIndex(0);
     }
