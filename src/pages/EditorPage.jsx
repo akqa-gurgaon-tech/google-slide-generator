@@ -13,15 +13,21 @@ function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
     const storedSlides = JSON.parse(localStorage.getItem("slides")) || [];
     
-    // Migrate slides to ensure they all have slideId
+    // Migrate slides to ensure they all have slideId and inputs
     const migratedSlides = storedSlides.map((slide, index) => {
-      if (!slide.slideId) {
-        return {
-          ...slide,
-          slideId: Date.now() + index, // Ensure unique IDs
-        };
+      const migratedSlide = { ...slide };
+      
+      // Ensure slideId exists
+      if (!migratedSlide.slideId) {
+        migratedSlide.slideId = Date.now() + index; // Ensure unique IDs
       }
-      return slide;
+      
+      // Ensure inputs exists
+      if (!migratedSlide.inputs) {
+        migratedSlide.inputs = {};
+      }
+      
+      return migratedSlide;
     });
     
     // Save migrated slides back to localStorage
@@ -52,26 +58,36 @@ function EditorPage({ onLogout, userInfo }) {
 
   const prevSlidesRef = useRef(slides);
   useEffect(() => {
-    if (prevSlidesRef.current.length === 0) {
+    // Skip if no slides or if this is the initial load
+    if (slides.length === 0) {
       prevSlidesRef.current = slides;
       return;
     }
 
     const timer = setTimeout(() => {
-      // Compare by id
-      const changedSlide = slides.filter((slide) => {
+      // Find all slides that are new or have changed
+      const changedSlides = slides.filter((slide) => {
         const prevSlide = prevSlidesRef.current.find(
           (s) => s.slideId === slide.slideId
         );
-        return (
-          !prevSlide || JSON.stringify(prevSlide) !== JSON.stringify(slide)
-        );
+        
+        // If slide doesn't exist in previous state, it's new
+        if (!prevSlide) {
+          return true;
+        }
+        
+        // If slide exists but content has changed
+        if (JSON.stringify(prevSlide) !== JSON.stringify(slide)) {
+          return true;
+        }
+        
+        return false;
       });
 
-      if (changedSlide.length > 0) {
-        updateSlidesData(currentPresentation, changedSlide);
-        // console.log("changedSlide slides:", changedSlide);
+      if (changedSlides.length > 0) {
+        updateSlidesData(currentPresentation, changedSlides);
       }
+      
       // Update previous ref
       prevSlidesRef.current = slides;
     }, 5000);
@@ -103,12 +119,12 @@ function EditorPage({ onLogout, userInfo }) {
       const data = await response.json();
 
       if (data.success) {
-        console.log("Slides data updated successfully");
+        console.log("✅ Slides data updated successfully");
       } else {
-        console.log("Failed to save slides data!");
+        console.log("❌ Failed to save slides data!");
       }
     } catch (error) {
-      console.error("Error creating presentation:", error);
+      console.error("❌ Error creating presentation:", error);
       alert(
         "Error fetching presentation. Please check your connection and try again."
       );

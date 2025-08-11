@@ -133,7 +133,6 @@ app.get("/ppt/get", async (req, res) => {
 
 app.post("/ppt/update", async (req, res) => {
   const json = req.body;
-  console.log("json", JSON.stringify(json, null, 2));
 
   await mongoClient
     .saveDeck(json.pptJson, json.slidesArr)
@@ -143,7 +142,7 @@ app.post("/ppt/update", async (req, res) => {
         .json({ success: true, message: "Deck saved successfully" });
     })
     .catch((err) => {
-      console.error("Error saving deck:", err);
+      console.error("❌ Server: Error saving deck:", err);
       res.status(500).json({ success: false, message: "Failed to save deck" });
     });
 });

@@ -29,11 +29,13 @@ export class MongoDBClient {
 
   public async saveDeck(pptJson: any, slidesArr: any[]): Promise<void> {
     // Normalize input slides
-    const newSlides = slidesArr.map((slide) => ({
-      slideId: slide.slideId,
-      layout: slide.layout || "default",
-      inputs: slide.inputs || {},
-    }));
+    const newSlides = slidesArr.map((slide) => {
+      return {
+        slideId: slide.slideId,
+        layout: slide.layout || "default",
+        inputs: (slide.inputs === undefined || slide.inputs === null) ? {} : slide.inputs,
+      };
+    });
 
     // Find existing deck
     const existingDeck = await DeckModel.findOne({
@@ -42,10 +44,17 @@ export class MongoDBClient {
 
     if (existingDeck) {
       console.log(
-        `Deck with ID ${pptJson.presentationId} exists. Updating slides...`
+        `🎯 MongoDB: Deck with ID ${pptJson.presentationId} exists. Updating slides...`
       );
 
       const prevSlides = existingDeck.slidesJson?.slides || [];
+      
+      // First, ensure all existing slides have the required inputs property
+      prevSlides.forEach((slide) => {
+        if (!slide.inputs) {
+          slide.inputs = {};
+        }
+      });
 
       // Merge: update existing or add new
       newSlides.forEach((slide) => {
@@ -62,7 +71,6 @@ export class MongoDBClient {
       // Update metadata (assuming variables exist in scope)
 
       await existingDeck.save();
-      console.log("✅ Deck updated:", pptJson.presentationId);
       return;
     }
 
@@ -81,9 +89,8 @@ export class MongoDBClient {
           slidesJson: { slides: newSlides },
         });
         await deck.save();
-        console.log("✅ Deck saved:", deck.presentationId);
       } catch (error) {
-        console.error("❌ Error saving deck:", error);
+        console.error("❌ MongoDB: Error saving deck:", error);
         throw error;
       }
     }
