@@ -5,10 +5,37 @@ import SlidePanel from "../components/SlidePanel";
 import SlideEditor from "../components/SlideEditor";
 import { PresentationViewer } from "../components/PresentationViewer";
 import { TabContainer, TabPanel } from "../components/TabContainer";
+import ThemeSelector from "../components/ThemeSelector.jsx";
+import ThemeCreator from "../components/ThemeCreator.jsx";
+import { themeManager } from "../design-system/ThemeManager.js";
 
 function EditorPage({ onLogout, userInfo }) {
   const [slides, setSlides] = useState(() => {
-    return JSON.parse(localStorage.getItem("slides")) || [];
+    const storedSlides = JSON.parse(localStorage.getItem("slides")) || [];
+    
+    // Migrate slides to ensure they all have slideId and inputs
+    const migratedSlides = storedSlides.map((slide, index) => {
+      const migratedSlide = { ...slide };
+      
+      // Ensure slideId exists
+      if (!migratedSlide.slideId) {
+        migratedSlide.slideId = Date.now() + index; // Ensure unique IDs
+      }
+      
+      // Ensure inputs exists
+      if (!migratedSlide.inputs) {
+        migratedSlide.inputs = {};
+      }
+      
+      return migratedSlide;
+    });
+    
+    // Save migrated slides back to localStorage
+    if (migratedSlides.length > 0 && migratedSlides.some(slide => !storedSlides.find(s => s.slideId === slide.slideId))) {
+      localStorage.setItem("slides", JSON.stringify(migratedSlides));
+    }
+    
+    return migratedSlides;
   });
 
   const [currentPresentation, setCurrentPresentation] = useState(() => {
@@ -18,6 +45,10 @@ function EditorPage({ onLogout, userInfo }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [presentationUrl, setPresentationUrl] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showThemeCreator, setShowThemeCreator] = useState(false);
+  const [themeSelectorMode, setThemeSelectorMode] = useState('presentation'); // 'presentation' or 'slide'
+  const [currentTheme, setCurrentTheme] = useState(null);
   const navigate = useNavigate();
   const tabContainerRef = useRef(null);
 
@@ -27,26 +58,36 @@ function EditorPage({ onLogout, userInfo }) {
 
   const prevSlidesRef = useRef(slides);
   useEffect(() => {
-    if (prevSlidesRef.current.length === 0) {
+    // Skip if no slides or if this is the initial load
+    if (slides.length === 0) {
       prevSlidesRef.current = slides;
       return;
     }
 
     const timer = setTimeout(() => {
-      // Compare by id
-      const changedSlide = slides.filter((slide) => {
+      // Find all slides that are new or have changed
+      const changedSlides = slides.filter((slide) => {
         const prevSlide = prevSlidesRef.current.find(
           (s) => s.slideId === slide.slideId
         );
-        return (
-          !prevSlide || JSON.stringify(prevSlide) !== JSON.stringify(slide)
-        );
+        
+        // If slide doesn't exist in previous state, it's new
+        if (!prevSlide) {
+          return true;
+        }
+        
+        // If slide exists but content has changed
+        if (JSON.stringify(prevSlide) !== JSON.stringify(slide)) {
+          return true;
+        }
+        
+        return false;
       });
 
-      if (changedSlide.length > 0) {
-        updateSlidesData(currentPresentation, changedSlide);
-        // console.log("changedSlide slides:", changedSlide);
+      if (changedSlides.length > 0) {
+        updateSlidesData(currentPresentation, changedSlides);
       }
+      
       // Update previous ref
       prevSlidesRef.current = slides;
     }, 5000);
@@ -66,6 +107,9 @@ function EditorPage({ onLogout, userInfo }) {
 
   const updateSlidesData = async (curre, changedSlide) => {
     try {
+      // Get theme data from theme manager
+      const themeData = themeManager.exportPresentationThemes();
+      
       const response = await fetch("http://localhost:5000/ppt/update", {
         credentials: "include",
         method: "POST",
@@ -73,22 +117,36 @@ function EditorPage({ onLogout, userInfo }) {
         body: JSON.stringify({
           pptJson: currentPresentation,
           slidesArr: changedSlide,
+          themes: themeData,
         }),
       });
       const data = await response.json();
 
       if (data.success) {
-        console.log("Slides data updated successfully");
+        console.log("✅ Slides data updated successfully");
       } else {
-        console.log("Failed to save slides data!");
+        console.log("❌ Failed to save slides data!");
       }
     } catch (error) {
-      console.error("Error creating presentation:", error);
+      console.error("❌ Error creating presentation:", error);
       alert(
         "Error fetching presentation. Please check your connection and try again."
       );
     }
   };
+  // Initialize theme manager and load current theme
+  useEffect(() => {
+    const initializeThemes = async () => {
+      try {
+        await themeManager.initialize();
+        setCurrentTheme(themeManager.getActiveTheme());
+      } catch (error) {
+        console.error('Error initializing themes:', error);
+      }
+    };
+    
+    initializeThemes();
+  }, []);
 
   const addSlide = () => {
     const newSlide = {
@@ -144,7 +202,20 @@ function EditorPage({ onLogout, userInfo }) {
 
     setIsCreating(true);
     try {
-      // console.log("Submitting slides:", slides);
+      // Get theme data from theme manager
+      const themeData = themeManager.exportPresentationThemes();
+      
+      // Ensure all slides have slideId before sending
+      const slidesWithId = slides.map((slide, index) => {
+        if (!slide.slideId) {
+          return {
+            ...slide,
+            slideId: Date.now() + index,
+          };
+        }
+        return slide;
+      });
+      
       const response = await fetch(
         "http://localhost:5000/presentation/create",
         {
@@ -152,8 +223,9 @@ function EditorPage({ onLogout, userInfo }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            slides,
+            slides: slidesWithId,
             presentationId: currentPresentation.presentationId,
+            themes: themeData,
           }),
         }
       );
@@ -240,6 +312,57 @@ function EditorPage({ onLogout, userInfo }) {
     }
   };
 
+  // Theme management functions
+  const handlePresentationThemeSelect = () => {
+    setThemeSelectorMode('presentation');
+    setShowThemeSelector(true);
+  };
+
+  const handleSlideThemeSelect = () => {
+    if (slides[activeIndex]) {
+      setThemeSelectorMode('slide');
+      setShowThemeSelector(true);
+    }
+  };
+
+  const handleThemeSelect = (theme) => {
+    if (themeSelectorMode === 'presentation') {
+      themeManager.setPresentationTheme(theme.id);
+      setCurrentTheme(theme);
+      // Force re-render of all slides with new theme
+      setTimeout(() => {
+        themeManager.applyThemeToAllSlides();
+      }, 100);
+    } else if (themeSelectorMode === 'slide' && slides[activeIndex]) {
+      themeManager.setSlideTheme(slides[activeIndex].slideId, theme.id);
+      // Force re-render of specific slide
+      setTimeout(() => {
+        themeManager.applyThemeToSpecificSlide(slides[activeIndex].slideId);
+      }, 100);
+    }
+    setShowThemeSelector(false);
+  };
+
+  const handleCreateTheme = (editingTheme = null) => {
+    setShowThemeCreator(true);
+    // editingTheme parameter can be used to edit existing themes
+  };
+
+  const handleThemeSaved = (savedTheme) => {
+    setShowThemeCreator(false);
+    // Optionally set as active theme
+    if (savedTheme) {
+      setCurrentTheme(savedTheme);
+    }
+  };
+
+  const getCurrentSlideTheme = () => {
+    if (slides[activeIndex]) {
+      return themeManager.getSlideTheme(slides[activeIndex].slideId);
+    }
+    return currentTheme;
+  };
+
   const currentSlide = slides[activeIndex];
 
   return (
@@ -255,6 +378,8 @@ function EditorPage({ onLogout, userInfo }) {
         presentationTitle={currentPresentation?.title}
         onTitleChange={handleTitleChange}
         isEditable={!!currentPresentation}
+        onPresentationThemeSelect={handlePresentationThemeSelect}
+        currentTheme={currentTheme}
       />
 
       <div className="main-content">
@@ -272,6 +397,8 @@ function EditorPage({ onLogout, userInfo }) {
                 slide={currentSlide}
                 onUpdateLayout={updateSlideLayout}
                 onUpdateInput={updateInput}
+                onSlideThemeSelect={handleSlideThemeSelect}
+                currentSlideTheme={getCurrentSlideTheme()}
               />
             </TabPanel>
             <TabPanel label="Presentation Preview">
@@ -308,6 +435,31 @@ function EditorPage({ onLogout, userInfo }) {
           </TabContainer>
         </div>
       </div>
+
+      {/* Theme Selection Modal */}
+      {showThemeSelector && (
+        <ThemeSelector
+          isOpen={showThemeSelector}
+          onClose={() => setShowThemeSelector(false)}
+          onThemeSelect={handleThemeSelect}
+          onCreateTheme={handleCreateTheme}
+          currentThemeId={
+            themeSelectorMode === 'presentation' 
+              ? currentTheme?.id 
+              : themeManager.slideThemeOverrides.get(slides[activeIndex]?.slideId)
+          }
+          slideId={themeSelectorMode === 'slide' ? slides[activeIndex]?.slideId : null}
+        />
+      )}
+
+      {/* Theme Creator Modal */}
+      {showThemeCreator && (
+        <ThemeCreator
+          isOpen={showThemeCreator}
+          onClose={() => setShowThemeCreator(false)}
+          onSave={handleThemeSaved}
+        />
+      )}
     </div>
   );
 }
