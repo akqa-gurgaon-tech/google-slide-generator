@@ -152,17 +152,19 @@ export class NeonDBService implements DBService {
     }
 
     async getThemesByUser(userId: string): Promise<CustomTheme[]> {
-        const result = await this.pool.query<CustomTheme>(
-            'SELECT * FROM theme_schema WHERE created_by = $1 ORDER BY created_at DESC',
-            [userId]
-        );
+        return this.getAllThemes();
+        // TODO: Implement this if we need to get themes by user
+        // const result = await this.pool.query<CustomTheme>(
+        //     'SELECT * FROM theme_schema WHERE created_by = $1 ORDER BY created_at DESC',
+        //     [userId]
+        // );
 
-        return result.rows.map(theme => ({
-            ...theme,
-            schema_str: typeof theme.schema_str === 'string' 
-                ? JSON.parse(theme.schema_str) 
-                : theme.schema_str
-        }));
+        // return result.rows.map(theme => ({
+        //     ...theme,
+        //     schema_str: typeof theme.schema_str === 'string' 
+        //         ? JSON.parse(theme.schema_str) 
+        //         : theme.schema_str
+        // }));
     }
 
     async getAllThemes(): Promise<CustomTheme[]> {
@@ -204,12 +206,19 @@ export class NeonDBService implements DBService {
         }
 
         updateValues.push(themeId);
-        updateValues.push(userId);
+        // updateValues.push(userId);
 
+        // const result = await this.pool.query<CustomTheme>(
+        //     `UPDATE theme_schema 
+        //      SET ${updateFields.join(', ')} 
+        //      WHERE theme_id = $${paramIndex++} AND created_by = $${paramIndex++}
+        //      RETURNING *`,
+        //     updateValues
+        // );
         const result = await this.pool.query<CustomTheme>(
             `UPDATE theme_schema 
              SET ${updateFields.join(', ')} 
-             WHERE theme_id = $${paramIndex++} AND created_by = $${paramIndex++}
+             WHERE theme_id = $${paramIndex++}
              RETURNING *`,
             updateValues
         );
@@ -234,19 +243,30 @@ export class NeonDBService implements DBService {
             throw new Error('User does not have permission to delete this theme');
         }
 
-        const result = await this.pool.query(
-            'DELETE FROM theme_schema WHERE theme_id = $1 AND created_by = $2',
-            [themeId, userId]
+        // const result = await this.pool.query(
+        //     'DELETE FROM theme_schema WHERE theme_id = $1 AND created_by = $2',
+        //     [themeId, userId]
+        // );
+
+         const result = await this.pool.query(
+            'DELETE FROM theme_schema WHERE theme_id = $1',
+            [themeId]
         );
+
 
         return result.rowCount > 0;
     }
 
     async isThemeOwner(themeId: string, userId: string): Promise<boolean> {
+        // TODO: Implement this if we need to check if the user is the owner of the theme
         const result = await this.pool.query(
-            'SELECT 1 FROM theme_schema WHERE theme_id = $1 AND created_by = $2',
-            [themeId, userId]
+            'SELECT 1 FROM theme_schema WHERE theme_id = $1',
+            [themeId]
         );
+
+        // const result = await this.pool.query(
+        //     'SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tokens) THEN 1 ELSE 0 END'
+        // );
 
         return result.rows.length > 0;
     }
