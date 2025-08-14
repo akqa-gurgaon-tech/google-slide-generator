@@ -168,7 +168,7 @@ const PresentationSelector = ({ isOpen, onClose, onSelectPresentation }) => {
     } catch (error) {
       console.error("Error creating presentation:", error);
       alert(
-        "Error fetching presentation. Please check your connection and try again."
+        "Error fetching presentation. Fetch slides data failed."
       );
     }
   };

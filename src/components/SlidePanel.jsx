@@ -21,7 +21,7 @@ const SlidePanel = ({ slides, activeIndex, onSlideSelect, onSlideDelete }) => {
         ) : (
           slides.map((slide, index) => (
             <SlideThumbnail
-              key={slide.id}
+              key={slide.slideId}
               slide={slide}
               index={index}
               isActive={index === activeIndex}

@@ -27,13 +27,30 @@ export class MongoDBClient {
     }
   }
 
-  public async saveDeck(pptJson: any, slidesArr: any[]): Promise<void> {
-    // Normalize input slides
-    const newSlides = slidesArr.map((slide) => ({
-      slideId: slide.slideId,
-      layout: slide.layout || "default",
-      inputs: slide.inputs || {},
-    }));
+  public async saveDeck(pptJson: any, slidesArr: any[], themes?: any, userInfo?: any): Promise<void> {
+    // Clean up any existing duplicates in the database first
+    await this.cleanupDuplicateSlides(pptJson.presentationId);
+    // Normalize input slides and add theme information
+    const newSlides = slidesArr.map((slide) => {
+      const baseInputs = (slide.inputs === undefined || slide.inputs === null) ? {} : slide.inputs;
+      
+      // Add theme information to inputs - themeId should be specific to the slide
+      const slideThemeId = themes?.slideOverrides?.[slide.slideId]?.id || themes?.presentationTheme?.id || null;
+      const inputsWithTheme = {
+        ...baseInputs,
+        themeId: slideThemeId, // This is now the specific theme for this slide
+      };
+      
+      const normalizedSlide = {
+        slideId: slide.slideId,
+        layout: slide.layout || "default",
+        inputs: inputsWithTheme,
+      };
+      
+
+      
+      return normalizedSlide;
+    });
 
     // Find existing deck
     const existingDeck = await DeckModel.findOne({
@@ -42,27 +59,55 @@ export class MongoDBClient {
 
     if (existingDeck) {
       console.log(
-        `Deck with ID ${pptJson.presentationId} exists. Updating slides...`
+        `🎯 MongoDB: Deck with ID ${pptJson.presentationId} exists. Updating slides...`
       );
 
       const prevSlides = existingDeck.slidesJson?.slides || [];
-
-      // Merge: update existing or add new
-      newSlides.forEach((slide) => {
-        const index = prevSlides.findIndex((s) => s.slideId === slide.slideId);
-        if (index !== -1) {
-          prevSlides[index] = slide; // Update existing
-        } else {
-          prevSlides.push(slide); // Add new
+      
+      // First, ensure all existing slides have the required inputs property
+      prevSlides.forEach((slide) => {
+        if (!slide.inputs) {
+          slide.inputs = {};
         }
       });
 
-      existingDeck.slidesJson = { slides: prevSlides };
+      // Ensure unique slides by slideId - remove any duplicates first
+      const uniquePrevSlides = [];
+      const seenSlideIds = new Set();
+      
+      prevSlides.forEach((slide) => {
+        if (!seenSlideIds.has(slide.slideId)) {
+          seenSlideIds.add(slide.slideId);
+          uniquePrevSlides.push(slide);
+        }
+      });
+      
+      // Merge: update existing or add new
+      newSlides.forEach((slide) => {
+        const index = uniquePrevSlides.findIndex((s) => String(s.slideId) === String(slide.slideId));
+        
+        if (index !== -1) {
+          uniquePrevSlides[index] = slide; // Update existing
+        } else {
+          uniquePrevSlides.push(slide); // Add new
+        }
+      });
+      
+      // Use the unique slides array
+      const finalSlides = uniquePrevSlides;
 
-      // Update metadata (assuming variables exist in scope)
+      existingDeck.slidesJson = { slides: finalSlides };
+
+      // Update metadata with theme and user information
+      if (themes?.presentationTheme?.id) {
+        existingDeck.themeId = themes.presentationTheme.id;
+      }
+      if (userInfo?.user_id) {
+        existingDeck.updatedBy = userInfo.user_id;
+      }
+      existingDeck.updatedAt = new Date();
 
       await existingDeck.save();
-      console.log("✅ Deck updated:", pptJson.presentationId);
       return;
     }
 
@@ -73,17 +118,16 @@ export class MongoDBClient {
           presentationId: pptJson.presentationId,
           title: pptJson.title,
           outline: pptJson.outline,
-          themeId: null,
-          createdBy: pptJson.createdBy,
-          updatedBy: null,
-          createdAt: pptJson.createdAt,
-          updatedAt: pptJson.updatedAt,
+          themeId: themes?.presentationTheme?.id || null,
+          createdBy: userInfo?.user_id || pptJson.createdBy,
+          updatedBy: userInfo?.user_id || null,
+          createdAt: pptJson.createdAt || new Date(),
+          updatedAt: new Date(),
           slidesJson: { slides: newSlides },
         });
         await deck.save();
-        console.log("✅ Deck saved:", deck.presentationId);
       } catch (error) {
-        console.error("❌ Error saving deck:", error);
+        console.error("❌ MongoDB: Error saving deck:", error);
         throw error;
       }
     }
@@ -108,6 +152,36 @@ export class MongoDBClient {
       console.log("MongoDB connection closed");
     } else {
       console.log("MongoDB connection is not open, no need to close");
+    }
+  }
+
+  // Clean up duplicate slides in existing decks
+  private async cleanupDuplicateSlides(presentationId: string): Promise<void> {
+    try {
+      const existingDeck = await DeckModel.findOne({ presentationId });
+      if (!existingDeck || !existingDeck.slidesJson?.slides) {
+        return;
+      }
+
+      const slides = existingDeck.slidesJson.slides;
+      const uniqueSlides = [];
+      const seenSlideIds = new Set();
+
+      slides.forEach((slide) => {
+        if (!seenSlideIds.has(slide.slideId)) {
+          seenSlideIds.add(slide.slideId);
+          uniqueSlides.push(slide);
+        } else {
+          console.log(`🎯 MongoDB: Cleanup - Removing duplicate slide ${slide.slideId}`);
+        }
+      });
+
+      if (uniqueSlides.length !== slides.length) {
+        existingDeck.slidesJson = { slides: uniqueSlides };
+        await existingDeck.save();
+      }
+    } catch (error) {
+      console.error("❌ MongoDB: Error cleaning up duplicate slides:", error);
     }
   }
 }

@@ -1,5 +1,6 @@
 import { google, Auth } from "googleapis";
 import { buildInsertTextRequests } from "./slide-layouts/layout.ts";
+import { generateTextStyleRequests, hexToRgb } from "./themeUtils.ts";
 
 export async function createPresentation(
   slides: any,
@@ -53,13 +54,79 @@ export async function createPresentation(
     // );
 
     // 4. Build insert text/image requests for this slide
-    const requests = buildInsertTextRequests(placeholders ?? [], slide.inputs);
+    const textRequests = buildInsertTextRequests(placeholders ?? [], slide.inputs);
 
-    // 5. Apply content
-    await slides.presentations.batchUpdate({
-      presentationId,
-      requestBody: { requests },
-    });
+    // 5. First, insert text content
+    if (textRequests.length > 0) {
+      await slides.presentations.batchUpdate({
+        presentationId,
+        requestBody: { requests: textRequests },
+      });
+    }
+    
+    // 6. Build theme styling requests if theme is present
+    const themeRequests: any[] = [];
+    
+    console.log(`🎨 Processing slide ${slide.slideId || 'UNDEFINED'} with theme:`, slide.theme ? 'YES' : 'NO');
+    if (slide.theme) {
+      console.log(`🎨 Theme colors for slide ${slide.slideId || 'UNDEFINED'}:`, slide.theme.colors);
+      console.log(`🎨 Theme typography for slide ${slide.slideId || 'UNDEFINED'}:`, slide.theme.typography);
+      
+      // Apply background styling
+      if (slide.theme.colors?.background?.primary) {
+        themeRequests.push({
+          updatePageProperties: {
+            objectId: slideId,
+            pageProperties: {
+              pageBackgroundFill: {
+                solidFill: {
+                  color: {
+                    rgbColor: hexToRgb(slide.theme.colors.background.primary)
+                  }
+                }
+              }
+            },
+            fields: 'pageBackgroundFill'
+          }
+        });
+      }
+      
+      // Apply text styling to placeholders that have text
+      placeholders?.forEach((placeholder: any) => {
+        if (placeholder.shape?.placeholder?.type) {
+          const placeholderType = placeholder.shape.placeholder.type;
+          const hasContent = slide.inputs && (
+            (placeholderType === 'CENTERED_TITLE' && slide.inputs.CENTERED_TITLE) ||
+            (placeholderType === 'SUBTITLE' && slide.inputs.SUBTITLE) ||
+            (placeholderType === 'TITLE' && slide.inputs.TITLE) ||
+            (placeholderType === 'BODY' && (slide.inputs.BODY || slide.inputs.LEFT_COLUMN || slide.inputs.RIGHT_COLUMN))
+          );
+          
+          if (hasContent) {
+            const textType = getTextTypeFromPlaceholder(placeholderType);
+            const textStyle = generateTextStyleRequests(slide.theme, textType);
+            
+            if (Object.keys(textStyle).length > 0) {
+              themeRequests.push({
+                updateTextStyle: {
+                  objectId: placeholder.objectId,
+                  style: textStyle,
+                  fields: Object.keys(textStyle).join(',')
+                }
+              });
+            }
+          }
+        }
+      });
+    }
+
+    // 7. Apply theme styling
+    if (themeRequests.length > 0) {
+      await slides.presentations.batchUpdate({
+        presentationId,
+        requestBody: { requests: themeRequests },
+      });
+    }
   }
   return `https://docs.google.com/presentation/d/${presentationId}/edit`;
 }
@@ -155,4 +222,19 @@ export async function updatePresentationTitle(
     success: true,
     title: title,
   };
+}
+
+// Helper function to map placeholder types to text style types
+function getTextTypeFromPlaceholder(placeholderType: string): 'title' | 'subtitle' | 'body' | 'caption' {
+  switch (placeholderType) {
+    case 'CENTERED_TITLE':
+    case 'TITLE':
+      return 'title';
+    case 'SUBTITLE':
+      return 'subtitle';
+    case 'BODY':
+      return 'body';
+    default:
+      return 'body';
+  }
 }

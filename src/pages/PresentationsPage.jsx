@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PresentationSelector from "../components/PresentationSelector";
+import ThemeDashboard from "../components/ThemeDashboard.jsx";
+import { themeManager } from "../design-system/ThemeManager.js";
 
 const PresentationsPage = ({ onLogout, userInfo }) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -8,7 +10,21 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
   const [showPresentationSelector, setShowPresentationSelector] =
     useState(false);
   const [presentationTitle, setPresentationTitle] = useState("");
+  const [showThemeDashboard, setShowThemeDashboard] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize theme manager
+  useEffect(() => {
+    const initializeThemes = async () => {
+      try {
+        await themeManager.initialize();
+      } catch (error) {
+        console.error('Error initializing themes:', error);
+      }
+    };
+    
+    initializeThemes();
+  }, []);
 
   const handleCreateNew = () => {
     setShowTitleDialog(true);
@@ -149,11 +165,20 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
           </div>
         </div>
         <div className="header-right">
-          <div className="user-info">
-            <span className="user-name">👤 {userInfo?.name || "User"}</span>
-            <button className="logout-button" onClick={onLogout}>
-              Sign Out
+          <div className="header-actions">
+            <button 
+              className="theme-dashboard-button"
+              onClick={() => setShowThemeDashboard(true)}
+              title="Design System"
+            >
+              🎨 Themes
             </button>
+            <div className="user-info">
+              <span className="user-name">👤 {userInfo?.name || "User"}</span>
+              <button className="logout-button" onClick={onLogout}>
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -222,6 +247,14 @@ const PresentationsPage = ({ onLogout, userInfo }) => {
         onClose={handleClosePresentationSelector}
         onSelectPresentation={handleSelectPresentation}
       />
+
+      {/* Theme Dashboard Modal */}
+      {showThemeDashboard && (
+        <ThemeDashboard
+          isOpen={showThemeDashboard}
+          onClose={() => setShowThemeDashboard(false)}
+        />
+      )}
     </div>
   );
 };
