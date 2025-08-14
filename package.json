@@ -5,17 +5,24 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+<<<<<<< HEAD
     "build": "npm run build:frontend && npm run build:server",
     "build:frontend": "vite build",
     "build:server": "cd server && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "install:all": "npm install && cd server && npm install"
+=======
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+>>>>>>> 08e5db8 (gur tech push)
   },
   "dependencies": {
     "lucide-react": "^0.537.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+<<<<<<< HEAD
     "react-router-dom": "^7.7.1",
     "@google-cloud/local-auth": "^3.0.1",
     "@neondatabase/serverless": "^1.0.1",
@@ -35,13 +42,24 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vercel/node": "^3.0.0",
+=======
+    "react-router-dom": "^7.7.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+>>>>>>> 08e5db8 (gur tech push)
     "@vitejs/plugin-react": "^4.6.0",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+<<<<<<< HEAD
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
+=======
+>>>>>>> 08e5db8 (gur tech push)
     "vite": "^7.1.0"
   }
 }
