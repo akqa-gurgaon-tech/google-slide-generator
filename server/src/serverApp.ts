@@ -15,7 +15,7 @@ import { NeonDBService } from "./services/NeonDBService.js";
 import type { GoogleAuthService } from "./interfaces/GoogleAuthService.js";
 import { GoogleAuthServiceImpl } from "./services/GoogleAuthServiceImpl.js";
 import { MongoDBClient } from "./services/MongoDBClient.js";
-import { extractSlideTemplates, createPresentationFromTemplate } from "./slideTemplateExtractor.js";
+import { extractSlideTemplates, createPresentationFromTemplate } from "./slideTemplateExtractor";
 
 // Load environment variables
 dotenv.config();
@@ -69,7 +69,7 @@ export function createServerApp() {
   app.get("/auth", async (req, res) => {
     try {
       const forceConsent = req.query.force === 'true';
-      const authUrl = await googleService.getAuthUrl(forceConsent);
+      const authUrl = googleService.generateAuthUrl(forceConsent);
       res.redirect(authUrl);
     } catch (error: any) {
       console.error("Error generating auth URL:", error);
@@ -85,7 +85,7 @@ export function createServerApp() {
     }
 
     try {
-      const userId = await googleService.handleAuthCallback(code as string);
+      const userId = await googleService.handleOAuthCallback(code as string);
       
       // Store userId in session
       (req as any).session.userId = userId;
