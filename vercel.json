@@ -4,7 +4,6 @@
   "buildCommand": "npm run build:frontend",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "nodeVersion": "18.x",
   "functions": {
     "api/index.ts": {
       "runtime": "@vercel/node@3.0.0",
