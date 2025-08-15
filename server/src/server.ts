@@ -7,14 +7,14 @@ import {
   createPresentation,
   createEmptyPresentation,
   updatePresentationTitle,
-} from "./slideGenerator.ts";
-import { applyThemesToSlides } from "./themeUtils.ts";
+} from "./slideGenerator";
+import { applyThemesToSlides } from "./themeUtils";
 import cors from "cors";
-import type { DBService } from "./interfaces/DBService.ts";
-import { NeonDBService } from "./services/NeonDBService.ts";
-import type { GoogleAuthService } from "./interfaces/GoogleAuthService.ts";
-import { GoogleAuthServiceImpl } from "./services/GoogleAuthServiceImpl.ts";
-import { MongoDBClient } from "./services/MongoDBClient.ts";
+import type { DBService } from "./interfaces/DBService";
+import { NeonDBService } from "./services/NeonDBService";
+import type { GoogleAuthService } from "./interfaces/GoogleAuthService";
+import { GoogleAuthServiceImpl } from "./services/GoogleAuthServiceImpl";
+import { MongoDBClient } from "./services/MongoDBClient";
 
 dotenv.config();
 const app = express();
@@ -48,7 +48,7 @@ app.use(
 
 // Step 1: Redirect user to Google
 app.get("/auth", async (req, res) => {
-  const userId = req.session.userId;
+  const userId = (req.session as any).userId;
   if (userId) res.redirect("http://localhost:5173/presentations");
 
   // Check if we need to force consent (only if user exists but has no valid refresh token)
@@ -63,7 +63,7 @@ app.get("/auth/callback", async (req, res) => {
 
   try {
     const userId = await googleService.handleOAuthCallback(code);
-    req.session.userId = userId;
+    (req.session as any).userId = userId;
     res.redirect("http://localhost:5173/presentations");
   } catch (err) {
     console.error("OAuth callback error:", err);

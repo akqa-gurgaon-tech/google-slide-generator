@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { DeckModel } from "../models/db-schema/deck.ts";
+import { DeckModel } from "../models/db-schema/deck";
 
 export class MongoDBClient {
   private static uri: string;

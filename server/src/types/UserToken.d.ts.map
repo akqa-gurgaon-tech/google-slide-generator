@@ -1,0 +1,1 @@
+{"version":3,"file":"UserToken.d.ts","sourceRoot":"","sources":["UserToken.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,SAAS;IACxB,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,UAAU,CAAC,EAAE,MAAM,CAAC;IACpB,OAAO,EAAE,MAAM,CAAC;IAChB,YAAY,EAAE,MAAM,CAAC;IACrB,aAAa,EAAE,MAAM,CAAC;IACtB,MAAM,EAAE,IAAI,CAAC;CACd"}

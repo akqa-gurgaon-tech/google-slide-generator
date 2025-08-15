@@ -1,0 +1,1 @@
+{"version":3,"file":"slide-service.d.ts","sourceRoot":"","sources":["slide-service.ts"],"names":[],"mappings":"AAAA,cAAM,YAAY;IACJ,OAAO,CAAC,MAAM;gBAAN,MAAM,EAAE,GAAG;IAElB,kBAAkB,CAAC,MAAM,EAAE,GAAG,EAAE,UAAU,EAAE,GAAG,EAAE,GAAG,OAAO,CAAC,MAAM,CAAC;CAqDjF;AAED,eAAe,YAAY,CAAC"}

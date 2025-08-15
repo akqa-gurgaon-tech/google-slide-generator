@@ -1,6 +1,6 @@
 import { google, Auth } from "googleapis";
-import { buildInsertTextRequests } from "./slide-layouts/layout.ts";
-import { generateTextStyleRequests, hexToRgb } from "./themeUtils.ts";
+import { buildInsertTextRequests } from "./slide-layouts/layout";
+import { generateTextStyleRequests, hexToRgb } from "./themeUtils";
 
 export async function createPresentation(
   slides: any,
