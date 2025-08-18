@@ -40,6 +40,11 @@ export class GoogleAuthServiceImpl implements GoogleAuthService {
     return this.oauth2Client.generateAuthUrl(authParams);
   }
 
+  // Alias for generateAuthUrl to match interface
+  getAuthUrl(forceConsent: boolean = false): string {
+    return this.generateAuthUrl(forceConsent);
+  }
+
   // Step 2: Exchange code for tokens & store them
   async handleOAuthCallback(code: string): Promise<string> {
     const { tokens } = await this.oauth2Client.getToken(code);
@@ -92,6 +97,11 @@ export class GoogleAuthServiceImpl implements GoogleAuthService {
 
     // Return userId so you can store it in session/JWT
     return userId;
+  }
+
+  // Alias for handleOAuthCallback to match interface
+  async handleAuthCallback(code: string): Promise<string> {
+    return this.handleOAuthCallback(code);
   }
 
   // Step 3: Load & refresh tokens when needed

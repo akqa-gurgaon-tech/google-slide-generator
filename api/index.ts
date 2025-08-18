@@ -117,7 +117,11 @@ app.get('/api/*', (req, res) => {
 // Export the handler for Vercel
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   return new Promise((resolve, reject) => {
-    app(req, res, (result: any) => {
+    // Cast VercelRequest to Express Request to maintain compatibility
+    const expressReq = req as any;
+    const expressRes = res as any;
+    
+    app(expressReq, expressRes, (result: any) => {
       if (result instanceof Error) {
         return reject(result);
       }

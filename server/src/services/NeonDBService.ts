@@ -124,7 +124,7 @@ export class NeonDBService implements DBService {
                     ? JSON.parse(createdTheme.schema_str) 
                     : createdTheme.schema_str
             };
-        } catch (error) {
+        } catch (error: any) {
             if (error.code === '23505') { // Unique constraint violation
                 throw new Error(`Theme with ID '${theme.theme_id}' already exists`);
             }
@@ -254,7 +254,7 @@ export class NeonDBService implements DBService {
         );
 
 
-        return result.rowCount > 0;
+        return (result.rowCount ?? 0) > 0;
     }
 
     async isThemeOwner(themeId: string, userId: string): Promise<boolean> {
